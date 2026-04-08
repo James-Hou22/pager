@@ -5,9 +5,7 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/joho/godotenv"
-	"net/http"
 
 	"github.com/James-Hou22/pager/internal/handler"
 	"github.com/James-Hou22/pager/internal/push"
@@ -64,9 +62,7 @@ func main() {
 	h.Register(app)
 
 	// Static assets — sw.js, manifest.json, icons, etc.
-	app.Use("/", filesystem.New(filesystem.Config{
-		Root: http.Dir("./web/static"),
-	}))
+	app.Static("/", "./web/static")
 
 	log.Fatal(app.Listen(":" + port))
 }
