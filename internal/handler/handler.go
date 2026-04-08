@@ -11,8 +11,6 @@ import (
 	"github.com/google/uuid"
 	qrcode "github.com/skip2/go-qrcode"
 	"github.com/valyala/fasthttp"
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/James-Hou22/pager/internal/push"
 	"github.com/James-Hou22/pager/internal/store"
 )
@@ -36,29 +34,12 @@ func (h *Handler) Register(app *fiber.App) {
 }
 
 // POST /channel
-// Body: {"password":"..."}
 // Response 201: {"id":"...","organizer_token":"..."}
 func (h *Handler) CreateChannel(c *fiber.Ctx) error {
-	var body struct {
-		Password string `json:"password"`
-	}
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON"})
-	}
-	if body.Password == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "password required"})
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
-	}
-
 	id := uuid.NewString()
 	token := uuid.NewString()
 
 	ch := store.Channel{
-		PasswordHash:   string(hash),
 		CreatedAt:      time.Now().UTC().Format(time.RFC3339),
 		OrganizerToken: token,
 	}
