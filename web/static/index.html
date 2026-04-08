@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pager</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#6c47ff" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+      gap: 1.5rem;
+    }
+
+    h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; }
+    h1 span { color: #6c47ff; }
+
+    #status {
+      font-size: 0.9rem;
+      color: #888;
+      text-align: center;
+    }
+
+    button {
+      background: #6c47ff;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:disabled { opacity: 0.4; cursor: default; }
+    button:not(:disabled):hover { opacity: 0.85; }
+
+    #feed {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .message {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      animation: slide-in 0.2s ease;
+    }
+
+    .message time {
+      display: block;
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 0.4rem;
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    #no-messages {
+      color: #555;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pa<span>g</span>er</h1>
+  <p id="status">Loading…</p>
+  <button id="subscribe-btn" disabled>Enable notifications</button>
+
+  <div id="feed">
+    <p id="no-messages">No messages yet.</p>
+  </div>
+
+  <script>
+    // Channel ID comes from the URL: /channel/:id  or  /?c=:id
+    const channelId = (() => {
+      const parts = location.pathname.split("/").filter(Boolean);
+      if (parts[0] === "channel" && parts[1]) return parts[1];
+      return new URLSearchParams(location.search).get("c");
+    })();
+
+    const statusEl = document.getElementById("status");
+    const subscribeBtn = document.getElementById("subscribe-btn");
+    const feed = document.getElementById("feed");
+    const noMessages = document.getElementById("no-messages");
+
+    if (!channelId) {
+      statusEl.textContent = "No channel ID found in URL.";
+    } else {
+      init();
+    }
+
+    async function init() {
+      statusEl.textContent = "Connecting…";
+
+      // --- SSE stream ---
+      const sse = new EventSource(`/channel/${channelId}/sse`);
+      sse.addEventListener("message", (e) => appendMessage(e.data));
+      sse.addEventListener("error", () => {
+        statusEl.textContent = "Connection lost — retrying…";
+      });
+      sse.addEventListener("open", () => {
+        statusEl.textContent = "Connected.";
+      });
+
+      // --- Service worker + push subscription ---
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        statusEl.textContent = "Connected. (Push notifications not supported in this browser.)";
+        return;
+      }
+
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      subscribeBtn.disabled = false;
+
+      // If already subscribed, re-register silently.
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) {
+        await sendSubscriptionToServer(existing);
+        subscribeBtn.textContent = "Notifications enabled ✓";
+        subscribeBtn.disabled = true;
+      }
+
+      subscribeBtn.addEventListener("click", async () => {
+        subscribeBtn.disabled = true;
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission !== "granted") {
+            subscribeBtn.disabled = false;
+            subscribeBtn.textContent = "Permission denied";
+            return;
+          }
+
+          const vapidMeta = document.querySelector('meta[name="vapid-public-key"]');
+          const vapidKey = vapidMeta ? vapidMeta.content : await fetchVapidKey();
+
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          });
+
+          await sendSubscriptionToServer(sub);
+          subscribeBtn.textContent = "Notifications enabled ✓";
+        } catch (err) {
+          console.error("Subscribe failed:", err);
+          subscribeBtn.disabled = false;
+          subscribeBtn.textContent = "Subscribe failed — try again";
+        }
+      });
+    }
+
+    async function fetchVapidKey() {
+      const res = await fetch("/vapid-public-key");
+      if (!res.ok) throw new Error("Could not fetch VAPID key");
+      const { key } = await res.json();
+      return key;
+    }
+
+    async function sendSubscriptionToServer(sub) {
+      await fetch(`/channel/${channelId}/sub`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub),
+      });
+    }
+
+    function appendMessage(text) {
+      noMessages.remove();
+      const div = document.createElement("div");
+      div.className = "message";
+      div.textContent = text;
+      const t = document.createElement("time");
+      t.textContent = new Date().toLocaleTimeString();
+      div.appendChild(t);
+      feed.prepend(div);
+    }
+
+    // Converts a URL-safe base64 VAPID key to the Uint8Array expected by the Push API.
+    function urlBase64ToUint8Array(base64String) {
+      const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const raw = atob(base64);
+      return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+    }
+  </script>
+</body>
+</html>
