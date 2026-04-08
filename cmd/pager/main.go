@@ -47,9 +47,9 @@ func main() {
 		return c.JSON(fiber.Map{"key": os.Getenv("VAPID_PUBLIC_KEY")})
 	})
 
-	// Serve organizer.html at /organizer for clean URLs.
+	// Serve the React SPA for organizer and attendee routes.
 	app.Get("/organizer", func(c *fiber.Ctx) error {
-		return c.SendFile("./web/static/organizer.html")
+		return c.SendFile("./web/static/index.html")
 	})
 
 	// Serve attendee page at /channel/:id (HTML) — must come before the API routes.

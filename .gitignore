@@ -1,3 +1,5 @@
 .env
 agents.md
 claude.md
+frontend/node_modules
+web/static/assets
