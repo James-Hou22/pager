@@ -14,19 +14,18 @@ var ErrNotFound = errors.New("not found")
 // ErrConflict is returned when a unique constraint is violated (e.g. duplicate email).
 var ErrConflict = errors.New("conflict")
 
-// Channel holds the metadata stored in the channel:{id} hash.
-type Channel struct {
+// RedisChannel holds the metadata stored in the channel:{id} Redis hash.
+// Deprecated: new code should use the Postgres-backed Channel type.
+type RedisChannel struct {
 	PasswordHash   string
 	CreatedAt      string
 	OrganizerToken string
 }
 
-// CreateChannel writes the channel hash. Returns an error if the key already exists.
-func (s *Store) CreateChannel(ctx context.Context, id string, ch Channel) error {
+// CreateRedisChannel writes the channel hash.
+func (s *Store) CreateRedisChannel(ctx context.Context, id string, ch RedisChannel) error {
 	key := channelKey(id)
 
-	// HSetNX-style: use a pipeline with NX semantics via HSETNX on a sentinel field.
-	// Simpler: write all fields atomically and let the caller guarantee uniqueness.
 	fields := map[string]any{
 		"password_hash":   ch.PasswordHash,
 		"created_at":      ch.CreatedAt,
@@ -34,24 +33,24 @@ func (s *Store) CreateChannel(ctx context.Context, id string, ch Channel) error 
 	}
 
 	if err := s.rdb.HSet(ctx, key, fields).Err(); err != nil {
-		return fmt.Errorf("store.CreateChannel: %w", err)
+		return fmt.Errorf("store.CreateRedisChannel: %w", err)
 	}
 	return nil
 }
 
-// GetChannel retrieves channel metadata. Returns ErrNotFound if the channel does not exist.
-func (s *Store) GetChannel(ctx context.Context, id string) (*Channel, error) {
+// GetRedisChannel retrieves channel metadata from Redis. Returns ErrNotFound if absent.
+func (s *Store) GetRedisChannel(ctx context.Context, id string) (*RedisChannel, error) {
 	key := channelKey(id)
 
 	vals, err := s.rdb.HGetAll(ctx, key).Result()
 	if err != nil {
-		return nil, fmt.Errorf("store.GetChannel: %w", err)
+		return nil, fmt.Errorf("store.GetRedisChannel: %w", err)
 	}
 	if len(vals) == 0 {
-		return nil, fmt.Errorf("store.GetChannel %s: %w", id, ErrNotFound)
+		return nil, fmt.Errorf("store.GetRedisChannel %s: %w", id, ErrNotFound)
 	}
 
-	return &Channel{
+	return &RedisChannel{
 		PasswordHash:   vals["password_hash"],
 		CreatedAt:      vals["created_at"],
 		OrganizerToken: vals["organizer_token"],

@@ -16,23 +16,23 @@ func newTestStore(t *testing.T) (*Store, *miniredis.Miniredis) {
 	return New(rdb, nil), mr
 }
 
-func TestCreateAndGetChannel(t *testing.T) {
+func TestCreateAndGetRedisChannel(t *testing.T) {
 	s, _ := newTestStore(t)
 	ctx := context.Background()
 
-	ch := Channel{
+	ch := RedisChannel{
 		PasswordHash:   "hash123",
 		CreatedAt:      "2026-04-07T00:00:00Z",
 		OrganizerToken: "tok_abc",
 	}
 
-	if err := s.CreateChannel(ctx, "ch1", ch); err != nil {
-		t.Fatalf("CreateChannel: %v", err)
+	if err := s.CreateRedisChannel(ctx, "ch1", ch); err != nil {
+		t.Fatalf("CreateRedisChannel: %v", err)
 	}
 
-	got, err := s.GetChannel(ctx, "ch1")
+	got, err := s.GetRedisChannel(ctx, "ch1")
 	if err != nil {
-		t.Fatalf("GetChannel: %v", err)
+		t.Fatalf("GetRedisChannel: %v", err)
 	}
 
 	if got.PasswordHash != ch.PasswordHash {
@@ -46,11 +46,11 @@ func TestCreateAndGetChannel(t *testing.T) {
 	}
 }
 
-func TestGetChannel_NotFound(t *testing.T) {
+func TestGetRedisChannel_NotFound(t *testing.T) {
 	s, _ := newTestStore(t)
 	ctx := context.Background()
 
-	_, err := s.GetChannel(ctx, "does-not-exist")
+	_, err := s.GetRedisChannel(ctx, "does-not-exist")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -110,13 +110,13 @@ func TestDeleteChannel(t *testing.T) {
 	s, _ := newTestStore(t)
 	ctx := context.Background()
 
-	ch := Channel{
+	ch := RedisChannel{
 		PasswordHash:   "hash123",
 		CreatedAt:      "2026-04-07T00:00:00Z",
 		OrganizerToken: "tok_abc",
 	}
-	if err := s.CreateChannel(ctx, "ch1", ch); err != nil {
-		t.Fatalf("CreateChannel: %v", err)
+	if err := s.CreateRedisChannel(ctx, "ch1", ch); err != nil {
+		t.Fatalf("CreateRedisChannel: %v", err)
 	}
 	if err := s.AddSubscriber(ctx, "ch1", `{"endpoint":"https://push.example.com/a"}`); err != nil {
 		t.Fatalf("AddSubscriber: %v", err)
@@ -126,7 +126,7 @@ func TestDeleteChannel(t *testing.T) {
 		t.Fatalf("DeleteChannel: %v", err)
 	}
 
-	_, err := s.GetChannel(ctx, "ch1")
+	_, err := s.GetRedisChannel(ctx, "ch1")
 	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("expected ErrNotFound after delete, got %v", err)
 	}

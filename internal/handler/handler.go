@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	qrcode "github.com/skip2/go-qrcode"
 	"github.com/valyala/fasthttp"
 	"github.com/James-Hou22/pager/internal/middleware"
@@ -27,37 +26,18 @@ func New(s *store.Store, f *push.Fanout, jwtSecret []byte) *Handler {
 }
 
 func (h *Handler) Register(app *fiber.App) {
-	app.Post("/channel", h.CreateChannel)
 	app.Get("/channel/:id", h.GetChannel)
 	app.Get("/channel/:id/qr", h.QRCode)
 	app.Post("/channel/:id/sub", h.AddSubscriber)
-	app.Post("/channel/:id/blast", h.Blast)
+	app.Post("/channel/:id/blast", middleware.Auth(h.jwtSecret), h.Blast)
 	app.Get("/channel/:id/sse", h.SSE)
 
 	app.Post("/auth/register", h.authRegister)
 	app.Post("/auth/login", h.authLogin)
 	app.Get("/auth/me", middleware.Auth(h.jwtSecret), h.authMe)
-}
 
-// POST /channel
-// Response 201: {"id":"...","organizer_token":"..."}
-func (h *Handler) CreateChannel(c *fiber.Ctx) error {
-	id := uuid.NewString()
-	token := uuid.NewString()
-
-	ch := store.Channel{
-		CreatedAt:      time.Now().UTC().Format(time.RFC3339),
-		OrganizerToken: token,
-	}
-
-	if err := h.store.CreateChannel(c.Context(), id, ch); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"id":              id,
-		"organizer_token": token,
-	})
+	app.Post("/events", middleware.Auth(h.jwtSecret), h.createEvent)
+	app.Post("/events/:eventId/channels", middleware.Auth(h.jwtSecret), h.createChannel)
 }
 
 // GET /channel/:id
@@ -65,7 +45,7 @@ func (h *Handler) CreateChannel(c *fiber.Ctx) error {
 func (h *Handler) GetChannel(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	ch, err := h.store.GetChannel(c.Context(), id)
+	ch, err := h.store.GetRedisChannel(c.Context(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "channel not found"})
@@ -84,7 +64,7 @@ func (h *Handler) GetChannel(c *fiber.Ctx) error {
 func (h *Handler) QRCode(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	if _, err := h.store.GetChannel(c.Context(), id); err != nil {
+	if _, err := h.store.GetRedisChannel(c.Context(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "channel not found"})
 		}
@@ -117,7 +97,7 @@ func baseURL(c *fiber.Ctx) string {
 func (h *Handler) AddSubscriber(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	if _, err := h.store.GetChannel(c.Context(), id); err != nil {
+	if _, err := h.store.GetRedisChannel(c.Context(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "channel not found"})
 		}
@@ -142,6 +122,7 @@ func (h *Handler) AddSubscriber(c *fiber.Ctx) error {
 // Response 200
 func (h *Handler) Blast(c *fiber.Ctx) error {
 	id := c.Params("id")
+	organizerID, _ := c.Locals("organizer_id").(string)
 
 	var body struct {
 		Message string `json:"message"`
@@ -153,11 +134,23 @@ func (h *Handler) Blast(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "message required"})
 	}
 
-	if _, err := h.store.GetChannel(c.Context(), id); err != nil {
+	if _, err := h.store.GetChannelByID(c.Context(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "channel not found"})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
+	}
+
+	event, err := h.store.GetEventByChannelID(c.Context(), id)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "channel not found"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
+	}
+
+	if event.OrganizerID != organizerID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "you do not own this channel"})
 	}
 
 	if err := h.store.AddMessage(c.Context(), id, body.Message); err != nil {
@@ -180,7 +173,7 @@ func (h *Handler) Blast(c *fiber.Ctx) error {
 func (h *Handler) SSE(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	if _, err := h.store.GetChannel(c.Context(), id); err != nil {
+	if _, err := h.store.GetRedisChannel(c.Context(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "channel not found"})
 		}
