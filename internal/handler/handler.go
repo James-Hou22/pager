@@ -11,17 +11,19 @@ import (
 	"github.com/google/uuid"
 	qrcode "github.com/skip2/go-qrcode"
 	"github.com/valyala/fasthttp"
+	"github.com/James-Hou22/pager/internal/middleware"
 	"github.com/James-Hou22/pager/internal/push"
 	"github.com/James-Hou22/pager/internal/store"
 )
 
 type Handler struct {
-	store  *store.Store
-	fanout *push.Fanout
+	store     *store.Store
+	fanout    *push.Fanout
+	jwtSecret []byte
 }
 
-func New(s *store.Store, f *push.Fanout) *Handler {
-	return &Handler{store: s, fanout: f}
+func New(s *store.Store, f *push.Fanout, jwtSecret []byte) *Handler {
+	return &Handler{store: s, fanout: f, jwtSecret: jwtSecret}
 }
 
 func (h *Handler) Register(app *fiber.App) {
@@ -31,6 +33,10 @@ func (h *Handler) Register(app *fiber.App) {
 	app.Post("/channel/:id/sub", h.AddSubscriber)
 	app.Post("/channel/:id/blast", h.Blast)
 	app.Get("/channel/:id/sse", h.SSE)
+
+	app.Post("/auth/register", h.authRegister)
+	app.Post("/auth/login", h.authLogin)
+	app.Get("/auth/me", middleware.Auth(h.jwtSecret), h.authMe)
 }
 
 // POST /channel

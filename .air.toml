@@ -1,0 +1,8 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main ./cmd/pager/main.go"
+  bin = "./tmp/main"
+  include_ext = ["go", "html", "env"]
+  exclude_dir = ["tmp", "vendor"]

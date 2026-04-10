@@ -8,8 +8,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// ErrNotFound is returned when the requested channel does not exist.
+// ErrNotFound is returned when a requested record does not exist.
 var ErrNotFound = errors.New("not found")
+
+// ErrConflict is returned when a unique constraint is violated (e.g. duplicate email).
+var ErrConflict = errors.New("conflict")
 
 // Channel holds the metadata stored in the channel:{id} hash.
 type Channel struct {

@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -16,10 +17,11 @@ const maxMessages = 50
 
 type Store struct {
 	rdb *redis.Client
+	db  *pgxpool.Pool
 }
 
-func New(rdb *redis.Client) *Store {
-	return &Store{rdb: rdb}
+func New(rdb *redis.Client, db *pgxpool.Pool) *Store {
+	return &Store{rdb: rdb, db: db}
 }
 
 func NewRedisClient(addr string) *redis.Client {

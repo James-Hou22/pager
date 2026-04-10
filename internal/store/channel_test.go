@@ -13,7 +13,7 @@ func newTestStore(t *testing.T) (*Store, *miniredis.Miniredis) {
 	t.Helper()
 	mr := miniredis.RunT(t)
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-	return New(rdb), mr
+	return New(rdb, nil), mr
 }
 
 func TestCreateAndGetChannel(t *testing.T) {
