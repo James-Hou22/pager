@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
+import { format } from 'date-fns'
+import { QRCodeCanvas } from 'qrcode.react'
 import { apiFetch } from '../lib/api.js'
 import { Button } from '../components/ui/button.jsx'
 import { Input } from '../components/ui/input.jsx'
@@ -12,14 +14,35 @@ import {
   DialogTitle,
 } from '../components/ui/dialog.jsx'
 
+function formatEventTime(iso) {
+  if (!iso) return <span className="text-muted-foreground">Not set</span>
+  return format(new Date(iso), 'MMM d, yyyy \'at\' h:mm a')
+}
+
+const EVENT_STATUS_STYLES = {
+  draft:  'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
+  active: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+  closed: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+}
+
+const CHANNEL_STATUS_STYLES = {
+  inactive: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
+  active:   'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+  closed:   'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+}
+
 export default function EventDetail() {
   const navigate = useNavigate()
   const { eventId } = useParams()
   const [event, setEvent] = useState(null)
   const [channels, setChannels] = useState([])
   const [loading, setLoading] = useState(true)
+  const [qrOpen, setQrOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [createError, setCreateError] = useState('')
+  const qrCanvasRef = useRef(null)
+
+  const attendeeURL = `${window.location.origin}/channel/${eventId}`
 
   const {
     register,
@@ -43,13 +66,13 @@ export default function EventDetail() {
     }
 
     async function init() {
-      const [eventsRes] = await Promise.all([apiFetch('/events')])
-      if (eventsRes.status === 401) {
+      const res = await apiFetch('/events')
+      if (res.status === 401) {
         localStorage.removeItem('pager_token')
         navigate('/', { replace: true })
         return
       }
-      const events = await eventsRes.json()
+      const events = await res.json()
       const found = events.find(e => e.ID === eventId)
       if (found) setEvent(found)
       await fetchChannels()
@@ -58,6 +81,16 @@ export default function EventDetail() {
 
     init()
   }, [eventId, navigate, fetchChannels])
+
+  function downloadQr() {
+    const canvas = document.querySelector('#event-qr-canvas canvas')
+    if (!canvas) return
+    const url = canvas.toDataURL('image/png')
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${event.Name}-qr.png`
+    a.click()
+  }
 
   function openDialog() {
     reset()
@@ -129,13 +162,58 @@ export default function EventDetail() {
       </header>
 
       <main className="flex-1 px-4 py-6 w-full max-w-2xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
+        {/* Event header */}
+        <div className="flex flex-col gap-2 mb-8">
           <h1 className="text-2xl font-semibold">{event.Name}</h1>
-          <span className="text-xs border px-2 py-1 capitalize text-muted-foreground">
-            {event.Status}
-          </span>
+          <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
+            <span>Starts: {formatEventTime(event.StartsAt)}</span>
+            <span>Ends: {formatEventTime(event.EndsAt)}</span>
+          </div>
+          <div className="mt-1">
+            <span className={`inline-block text-xs font-medium px-2 py-1 capitalize ${EVENT_STATUS_STYLES[event.Status] ?? EVENT_STATUS_STYLES.draft}`}>
+              {event.Status}
+            </span>
+          </div>
         </div>
 
+        {/* QR code section */}
+        <div className="border mb-6">
+          <button
+            type="button"
+            onClick={() => setQrOpen(o => !o)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/50 transition-colors"
+          >
+            <span>Event QR Code</span>
+            <svg
+              className={`w-4 h-4 text-muted-foreground transition-transform ${qrOpen ? 'rotate-180' : ''}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <div
+            className={`grid transition-all duration-300 ease-in-out ${qrOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+          >
+            <div className="overflow-hidden">
+              <div className="border-t px-4 py-5 flex flex-col items-center gap-4">
+                <div id="event-qr-canvas" ref={qrCanvasRef}>
+                  <QRCodeCanvas value={attendeeURL} size={200} />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-none h-9 w-full max-w-xs"
+                  onClick={downloadQr}
+                >
+                  Download PNG
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Channel list */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold">Channels</h2>
           <Button className="rounded-none h-9" onClick={openDialog}>New Channel</Button>
@@ -146,15 +224,18 @@ export default function EventDetail() {
             No channels yet. Create your first one.
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col">
             {channels.map(ch => (
-              <div
+              <Link
                 key={ch.ID}
-                className="border px-4 py-3 flex items-center justify-between"
+                to={`/events/${eventId}/channels/${ch.ID}`}
+                className="flex items-center justify-between px-4 py-4 border-b first:border-t hover:bg-muted/50 transition-colors"
               >
                 <span className="font-medium text-sm">{ch.Name}</span>
-                <span className="text-xs text-muted-foreground capitalize">{ch.Status}</span>
-              </div>
+                <span className={`text-xs font-medium px-2 py-1 capitalize ${CHANNEL_STATUS_STYLES[ch.Status] ?? CHANNEL_STATUS_STYLES.inactive}`}>
+                  {ch.Status}
+                </span>
+              </Link>
             ))}
           </div>
         )}
