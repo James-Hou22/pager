@@ -14,49 +14,6 @@ var ErrNotFound = errors.New("not found")
 // ErrConflict is returned when a unique constraint is violated (e.g. duplicate email).
 var ErrConflict = errors.New("conflict")
 
-// RedisChannel holds the metadata stored in the channel:{id} Redis hash.
-// Deprecated: new code should use the Postgres-backed Channel type.
-type RedisChannel struct {
-	PasswordHash   string
-	CreatedAt      string
-	OrganizerToken string
-}
-
-// CreateRedisChannel writes the channel hash.
-func (s *Store) CreateRedisChannel(ctx context.Context, id string, ch RedisChannel) error {
-	key := channelKey(id)
-
-	fields := map[string]any{
-		"password_hash":   ch.PasswordHash,
-		"created_at":      ch.CreatedAt,
-		"organizer_token": ch.OrganizerToken,
-	}
-
-	if err := s.rdb.HSet(ctx, key, fields).Err(); err != nil {
-		return fmt.Errorf("store.CreateRedisChannel: %w", err)
-	}
-	return nil
-}
-
-// GetRedisChannel retrieves channel metadata from Redis. Returns ErrNotFound if absent.
-func (s *Store) GetRedisChannel(ctx context.Context, id string) (*RedisChannel, error) {
-	key := channelKey(id)
-
-	vals, err := s.rdb.HGetAll(ctx, key).Result()
-	if err != nil {
-		return nil, fmt.Errorf("store.GetRedisChannel: %w", err)
-	}
-	if len(vals) == 0 {
-		return nil, fmt.Errorf("store.GetRedisChannel %s: %w", id, ErrNotFound)
-	}
-
-	return &RedisChannel{
-		PasswordHash:   vals["password_hash"],
-		CreatedAt:      vals["created_at"],
-		OrganizerToken: vals["organizer_token"],
-	}, nil
-}
-
 // RemoveSubscriber removes a specific web push subscription from the channel's subscriber set.
 // Used to prune stale subscriptions on 410 Gone responses.
 func (s *Store) RemoveSubscriber(ctx context.Context, channelID, subJSON string) error {
@@ -107,13 +64,4 @@ func (s *Store) Publish(ctx context.Context, channelID, message string) error {
 // The caller is responsible for closing the returned *redis.PubSub.
 func (s *Store) Subscribe(ctx context.Context, channelID string) *redis.PubSub {
 	return s.rdb.Subscribe(ctx, channelEventsKey(channelID))
-}
-
-// DeleteChannel removes the channel hash, subscriber set, and message list.
-func (s *Store) DeleteChannel(ctx context.Context, id string) error {
-	keys := []string{channelKey(id), channelSubsKey(id), channelMsgsKey(id)}
-	if err := s.rdb.Del(ctx, keys...).Err(); err != nil && !errors.Is(err, redis.Nil) {
-		return fmt.Errorf("store.DeleteChannel: %w", err)
-	}
-	return nil
 }
