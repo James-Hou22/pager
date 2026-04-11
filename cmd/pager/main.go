@@ -68,23 +68,7 @@ func main() {
 	})
 
 	// Serve the React SPA for organizer and attendee routes.
-	app.Get("/organizer", func(c *fiber.Ctx) error {
-		return c.SendFile("./web/static/index.html")
-	})
-
-	// Serve attendee page at /channel/:id (HTML) — must come before the API routes.
-	app.Get("/channel/:id", func(c *fiber.Ctx) error {
-		// If the client wants JSON (API call), fall through to the API handler.
-		if c.Accepts("text/html") == "text/html" {
-			return c.SendFile("./web/static/index.html")
-		}
-		return c.Next()
-	})
-
 	h.Register(app)
-
-	// Static assets — sw.js, manifest.json, icons, etc.
-	app.Static("/", "./web/static")
 
 	log.Fatal(app.Listen(":" + port))
 }
