@@ -22,6 +22,8 @@ export default defineConfig({
       '/channel': 'http://localhost:8080',
       '/health': 'http://localhost:8080',
       '/vapid-public-key': 'http://localhost:8080',
+      '/auth': 'http://localhost:8080',
+      '/events': 'http://localhost:8080',
     },
   },
 })
