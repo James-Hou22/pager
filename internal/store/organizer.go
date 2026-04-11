@@ -38,6 +38,24 @@ func (s *Store) CreateOrganizer(ctx context.Context, email, passwordHash string)
 	return o, nil
 }
 
+// GetOrganizerByID fetches an organizer by their UUID.
+// Returns ErrNotFound if no row matches.
+func (s *Store) GetOrganizerByID(ctx context.Context, id string) (Organizer, error) {
+	var o Organizer
+	err := s.db.QueryRow(ctx,
+		`SELECT id, email, password_hash, created_at
+		 FROM organizers WHERE id = $1`,
+		id,
+	).Scan(&o.ID, &o.Email, &o.PasswordHash, &o.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Organizer{}, fmt.Errorf("store.GetOrganizerByID %s: %w", id, ErrNotFound)
+		}
+		return Organizer{}, fmt.Errorf("store.GetOrganizerByID: %w", err)
+	}
+	return o, nil
+}
+
 // GetOrganizerByEmail fetches an organizer by email.
 // Returns ErrNotFound if no row matches.
 func (s *Store) GetOrganizerByEmail(ctx context.Context, email string) (Organizer, error) {

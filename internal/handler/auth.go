@@ -89,7 +89,11 @@ func (h *Handler) authMe(c *fiber.Ctx) error {
 	if !ok || organizerID == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
-	return c.JSON(fiber.Map{"organizer_id": organizerID})
+	org, err := h.store.GetOrganizerByID(c.Context(), organizerID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
+	}
+	return c.JSON(fiber.Map{"organizer_id": org.ID, "email": org.Email})
 }
 
 // signToken creates a signed JWT for the given organizer ID with a 72h expiry.
