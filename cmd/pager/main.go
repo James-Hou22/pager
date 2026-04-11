@@ -67,8 +67,16 @@ func main() {
 		return c.JSON(fiber.Map{"key": os.Getenv("VAPID_PUBLIC_KEY")})
 	})
 
-	// Serve the React SPA for organizer and attendee routes.
+	// API routes
 	h.Register(app)
+
+	// Static assets (JS, CSS, icons, etc.)
+	app.Static("/", "./web/static")
+
+	// SPA catch-all — any unmatched route serves index.html so React Router handles it.
+	app.Get("*", func(c *fiber.Ctx) error {
+		return c.SendFile("./web/static/index.html")
+	})
 
 	log.Fatal(app.Listen(":" + port))
 }
