@@ -27,10 +27,33 @@ func (h *Handler) Register(app *fiber.App) {
 
 	app.Get("/events", middleware.Auth(h.jwtSecret), h.listEvents)
 	app.Post("/events", middleware.Auth(h.jwtSecret), h.createEvent)
+	app.Patch("/events/:eventId/status", middleware.Auth(h.jwtSecret), h.updateEventStatus)
 	app.Get("/events/:eventId/channels", middleware.Auth(h.jwtSecret), h.listChannels)
 	app.Post("/events/:eventId/channels", middleware.Auth(h.jwtSecret), h.createChannel)
+	app.Patch("/events/:eventId/channels/:channelId/status", middleware.Auth(h.jwtSecret), h.updateChannelStatus)
+	app.Get("/events/:eventId/channels/:channelId/messages", middleware.Auth(h.jwtSecret), h.getChannelMessages)
 
 	app.Post("/channel/:id/blast", middleware.Auth(h.jwtSecret), h.Blast)
+}
+
+// verifyEventOwnership fetches the event by ID and confirms the given organizerID
+// owns it. On failure it writes the appropriate HTTP response and returns a
+// non-nil error so the caller can do:
+//
+//	event, err := h.verifyEventOwnership(c, eventID, organizerID)
+//	if err != nil { return err }
+func (h *Handler) verifyEventOwnership(c *fiber.Ctx, eventID, organizerID string) (store.Event, error) {
+	event, err := h.store.GetEventByID(c.Context(), eventID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return store.Event{}, c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "event not found"})
+		}
+		return store.Event{}, c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
+	}
+	if event.OrganizerID != organizerID {
+		return store.Event{}, c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "you do not own this event"})
+	}
+	return event, nil
 }
 
 // POST /channel/:id/blast
@@ -51,13 +74,8 @@ func (h *Handler) Blast(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "message required"})
 	}
 
-	if _, err := h.store.GetChannelByID(c.Context(), id); err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "channel not found"})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
-	}
-
+	// GetEventByChannelID returns ErrNotFound if the channel doesn't exist,
+	// so no separate channel existence check is needed.
 	event, err := h.store.GetEventByChannelID(c.Context(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
@@ -68,6 +86,12 @@ func (h *Handler) Blast(c *fiber.Ctx) error {
 
 	if event.OrganizerID != organizerID {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "you do not own this channel"})
+	}
+
+	// Persist to Postgres first — abort if the write fails so no message is
+	// delivered without a durable record.
+	if _, err := h.store.CreateMessage(c.Context(), id, body.Message); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 	}
 
 	if err := h.store.AddMessage(c.Context(), id, body.Message); err != nil {

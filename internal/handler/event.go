@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"errors"
+	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/James-Hou22/pager/internal/store"
 )
 
 // GET /events
@@ -59,4 +62,43 @@ func (h *Handler) createEvent(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(event)
+}
+
+// PATCH /events/:eventId/status
+// Authorization: Bearer <token>
+// Body: {"status":"draft"|"active"|"closed"}
+// Response 200: updated Event as JSON
+func (h *Handler) updateEventStatus(c *fiber.Ctx) error {
+	eventID := c.Params("eventId")
+	organizerID, _ := c.Locals("organizer_id").(string)
+
+	if _, err := h.verifyEventOwnership(c, eventID, organizerID); err != nil {
+		return err
+	}
+
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON"})
+	}
+
+	var status store.EventStatus
+	switch store.EventStatus(body.Status) {
+	case store.EventStatusDraft, store.EventStatusActive, store.EventStatusClosed:
+		status = store.EventStatus(body.Status)
+	default:
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid status"})
+	}
+
+	event, err := h.store.UpdateEventStatus(c.Context(), eventID, status)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "event not found"})
+		}
+		log.Printf("updateEventStatus: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
+	}
+
+	return c.JSON(event)
 }

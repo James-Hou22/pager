@@ -34,6 +34,24 @@ type Channel struct {
 	CreatedAt time.Time
 }
 
+// GetEventByID fetches a single event by its UUID.
+// Returns ErrNotFound if no row matches.
+func (s *Store) GetEventByID(ctx context.Context, eventID string) (Event, error) {
+	var e Event
+	err := s.db.QueryRow(ctx,
+		`SELECT id, organizer_id, name, access_code, status, starts_at, ends_at, created_at
+		 FROM events WHERE id = $1`,
+		eventID,
+	).Scan(&e.ID, &e.OrganizerID, &e.Name, &e.AccessCode, &e.Status, &e.StartsAt, &e.EndsAt, &e.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Event{}, fmt.Errorf("store.GetEventByID %s: %w", eventID, ErrNotFound)
+		}
+		return Event{}, fmt.Errorf("store.GetEventByID: %w", err)
+	}
+	return e, nil
+}
+
 // GetEventsByOrganizerID returns all events for an organizer, newest first.
 // Returns an empty slice if none are found.
 func (s *Store) GetEventsByOrganizerID(ctx context.Context, organizerID string) ([]Event, error) {
@@ -152,6 +170,42 @@ func (s *Store) GetChannelsByEventID(ctx context.Context, eventID string) ([]Cha
 		return nil, fmt.Errorf("store.GetChannelsByEventID: %w", err)
 	}
 	return channels, nil
+}
+
+// UpdateChannelStatus sets the status of a channel and returns the updated row.
+// Returns ErrNotFound if no channel with that ID exists.
+func (s *Store) UpdateChannelStatus(ctx context.Context, channelID string, status ChannelStatus) (Channel, error) {
+	var ch Channel
+	err := s.db.QueryRow(ctx,
+		`UPDATE channels SET status = $1 WHERE id = $2
+		 RETURNING id, event_id, name, redis_key, status, opens_at, closes_at, created_at`,
+		status, channelID,
+	).Scan(&ch.ID, &ch.EventID, &ch.Name, &ch.RedisKey, &ch.Status, &ch.OpensAt, &ch.ClosesAt, &ch.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Channel{}, fmt.Errorf("store.UpdateChannelStatus %s: %w", channelID, ErrNotFound)
+		}
+		return Channel{}, fmt.Errorf("store.UpdateChannelStatus: %w", err)
+	}
+	return ch, nil
+}
+
+// UpdateEventStatus sets the status of an event and returns the updated row.
+// Returns ErrNotFound if no event with that ID exists.
+func (s *Store) UpdateEventStatus(ctx context.Context, eventID string, status EventStatus) (Event, error) {
+	var e Event
+	err := s.db.QueryRow(ctx,
+		`UPDATE events SET status = $1 WHERE id = $2
+		 RETURNING id, organizer_id, name, access_code, status, starts_at, ends_at, created_at`,
+		status, eventID,
+	).Scan(&e.ID, &e.OrganizerID, &e.Name, &e.AccessCode, &e.Status, &e.StartsAt, &e.EndsAt, &e.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Event{}, fmt.Errorf("store.UpdateEventStatus %s: %w", eventID, ErrNotFound)
+		}
+		return Event{}, fmt.Errorf("store.UpdateEventStatus: %w", err)
+	}
+	return e, nil
 }
 
 // GetEventByChannelID fetches the parent event of a channel by joining through event_id.
