@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pager"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -24,6 +24,27 @@ services:
     volumes:
       - redis_dev_data:/data
 
+  api:
+    image: golang:1.25-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - go_mod_cache:/root/go/pkg/mod
+    ports:
+      - "8080:8080"
+    command: sh -c "go install github.com/air-verse/air@latest && air"
+    env_file: .env.local
+    environment:
+      - REDIS_URL=redis:6379
+      - POSTGRES_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+
 volumes:
   postgres_dev_data:
   redis_dev_data:
+  go_mod_cache:
