@@ -70,10 +70,15 @@ func main() {
 	// API routes
 	h.Register(app)
 
-	// Static assets (JS, CSS, icons, etc.)
+	// Static assets (JS, CSS, sw.js, manifest.json, etc.)
 	app.Static("/", "./web/static")
 
-	// SPA catch-all — any unmatched route serves index.html so React Router handles it.
+	// Attendee SPA — lightweight bundle for /channel/:id routes
+	app.Get("/channel/*", func(c *fiber.Ctx) error {
+		return c.SendFile("./web/static/attendee.html")
+	})
+
+	// Organizer SPA catch-all
 	app.Get("*", func(c *fiber.Ctx) error {
 		return c.SendFile("./web/static/index.html")
 	})

@@ -241,7 +241,7 @@ export default function ChannelDetail() {
               <Textarea
                 id="message-body"
                 placeholder="Type your message…"
-                className="min-h-[120px]"
+                className="min-h-30"
                 value={messageBody}
                 onChange={e => setMessageBody(e.target.value)}
                 required
