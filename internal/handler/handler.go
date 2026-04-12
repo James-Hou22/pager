@@ -38,6 +38,7 @@ func (h *Handler) Register(app *fiber.App) {
 	app.Get("/attendee/events/:eventId", h.getPublicEvent)
 	app.Get("/attendee/events/:eventId/channels", h.getPublicChannels)
 	app.Get("/attendee/channel/:channelId/messages", h.getAttendeeChannelMessages)
+	app.Get("/manifest/:accessCode", h.getManifest)
 	app.Post("/channel/:id/sub", h.subscribeChannel)
 	app.Get("/channel/:id/sse", h.sseChannel)
 }

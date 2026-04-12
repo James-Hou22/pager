@@ -28,6 +28,20 @@ export default function Attendee() {
   const [subError, setSubError] = useState('')
 
   useEffect(() => {
+    if (!event) return
+
+    document.title = event.name
+
+    let link = document.querySelector("link[rel='manifest']")
+    if (!link) {
+      link = document.createElement('link')
+      link.rel = 'manifest'
+      document.head.appendChild(link)
+    }
+    link.href = `/manifest/${eventId}`
+  }, [event, eventId])
+
+  useEffect(() => {
     if (!eventId) {
       setLoadError('No event ID found in URL.')
       return

@@ -164,6 +164,37 @@ func (h *Handler) getAttendeeChannelMessages(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
+// GET /manifest/:accessCode
+// Public — no auth required.
+// Returns a Web App Manifest scoped to the specific event so iOS labels
+// the home screen icon with the event name and opens the correct start URL.
+func (h *Handler) getManifest(c *fiber.Ctx) error {
+	accessCode := c.Params("accessCode")
+
+	event, err := h.store.GetEventByAccessCode(c.Context(), accessCode)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "event not found"})
+		}
+		log.Printf("getManifest: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
+	}
+
+	c.Set("Content-Type", "application/manifest+json")
+	return c.JSON(fiber.Map{
+		"name":             event.Name,
+		"short_name":       event.Name,
+		"start_url":        "/event/" + event.AccessCode,
+		"display":          "standalone",
+		"background_color": "#0f0f0f",
+		"theme_color":      "#6c47ff",
+		"icons": []fiber.Map{
+			{"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+			{"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
+		},
+	})
+}
+
 // GET /channel/:id/sse
 // Public — no auth required.
 // Streams Redis pub/sub messages to the client as Server-Sent Events.
