@@ -34,6 +34,12 @@ func (h *Handler) Register(app *fiber.App) {
 	app.Get("/events/:eventId/channels/:channelId/messages", middleware.Auth(h.jwtSecret), h.getChannelMessages)
 
 	app.Post("/channel/:id/blast", middleware.Auth(h.jwtSecret), h.Blast)
+
+	app.Get("/attendee/events/:eventId", h.getPublicEvent)
+	app.Get("/attendee/events/:eventId/channels", h.getPublicChannels)
+	app.Get("/attendee/channel/:channelId/messages", h.getAttendeeChannelMessages)
+	app.Post("/channel/:id/sub", h.subscribeChannel)
+	app.Get("/channel/:id/sse", h.sseChannel)
 }
 
 // verifyEventOwnership fetches the event by ID and confirms the given organizerID

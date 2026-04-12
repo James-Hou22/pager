@@ -73,8 +73,8 @@ func main() {
 	// Static assets (JS, CSS, sw.js, manifest.json, etc.)
 	app.Static("/", "./web/static")
 
-	// Attendee SPA — lightweight bundle for /channel/:id routes
-	app.Get("/channel/*", func(c *fiber.Ctx) error {
+	// Attendee SPA — lightweight bundle for /event/:id routes
+	app.Get("/event/*", func(c *fiber.Ctx) error {
 		return c.SendFile("./web/static/attendee.html")
 	})
 

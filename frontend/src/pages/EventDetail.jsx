@@ -7,6 +7,7 @@ import { apiFetch } from '../lib/api.js'
 import { Button } from '../components/ui/button.jsx'
 import { Input } from '../components/ui/input.jsx'
 import { Label } from '../components/ui/label.jsx'
+import { Textarea } from '../components/ui/textarea.jsx'
 import {
   Dialog,
   DialogContent,
@@ -42,7 +43,7 @@ export default function EventDetail() {
   const [createError, setCreateError] = useState('')
   const qrCanvasRef = useRef(null)
 
-  const attendeeURL = `${window.location.origin}/channel/${eventId}`
+  const attendeeURL = event ? `${window.location.origin}/event/${event.AccessCode}` : ''
 
   const {
     register,
@@ -110,6 +111,7 @@ export default function EventDetail() {
     setCreateError('')
 
     const body = { name: data.name }
+    if (data.description?.trim()) body.description = data.description.trim()
     if (data.opensAt) body.opens_at = new Date(data.opensAt).toISOString()
     if (data.closesAt) body.closes_at = new Date(data.closesAt).toISOString()
 
@@ -259,6 +261,16 @@ export default function EventDetail() {
               {errors.name && (
                 <p className="text-sm text-destructive">{errors.name.message}</p>
               )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="channel-description">Description (optional)</Label>
+              <Textarea
+                id="channel-description"
+                placeholder="Shown to attendees when selecting channels"
+                className="min-h-20"
+                {...register('description')}
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">

@@ -7,6 +7,19 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    // Rewrite /event/* to /attendee.html in dev so the attendee SPA is served
+    // correctly. In production the Go server handles this routing.
+    {
+      name: 'attendee-spa-rewrite',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url.startsWith('/event/')) {
+            req.url = '/attendee.html'
+          }
+          next()
+        })
+      },
+    },
   ],
   resolve: {
     alias: {
@@ -26,6 +39,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/channel': 'http://localhost:8080',
+      '/attendee/events': 'http://localhost:8080',
+      '/attendee/channel': 'http://localhost:8080',
       '/health': 'http://localhost:8080',
       '/vapid-public-key': 'http://localhost:8080',
       '/auth': 'http://localhost:8080',

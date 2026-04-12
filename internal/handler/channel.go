@@ -38,10 +38,11 @@ func (h *Handler) createChannel(c *fiber.Ctx) error {
 	eventID := c.Params("eventId")
 
 	var body struct {
-		Name     string `json:"name"`
-		Status   string `json:"status"`
-		OpensAt  string `json:"opens_at"`
-		ClosesAt string `json:"closes_at"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Status      string `json:"status"`
+		OpensAt     string `json:"opens_at"`
+		ClosesAt    string `json:"closes_at"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON"})
@@ -76,7 +77,12 @@ func (h *Handler) createChannel(c *fiber.Ctx) error {
 		closesAt = &t
 	}
 
-	channel, err := h.store.CreateChannel(c.Context(), eventID, body.Name, status, opensAt, closesAt)
+	var description *string
+	if body.Description != "" {
+		description = &body.Description
+	}
+
+	channel, err := h.store.CreateChannel(c.Context(), eventID, body.Name, description, status, opensAt, closesAt)
 	if err != nil {
 		log.Printf("createChannel: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})

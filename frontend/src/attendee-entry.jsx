@@ -8,7 +8,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/channel/:id" element={<Attendee />} />
+        <Route path="/event/:id" element={<Attendee />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

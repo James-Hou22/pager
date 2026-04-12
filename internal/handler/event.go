@@ -32,9 +32,10 @@ func (h *Handler) createEvent(c *fiber.Ctx) error {
 	organizerID, _ := c.Locals("organizer_id").(string)
 
 	var body struct {
-		Name     string `json:"name"`
-		StartsAt string `json:"starts_at"`
-		EndsAt   string `json:"ends_at"`
+		Name               string `json:"name"`
+		WelcomeDescription string `json:"welcome_description"`
+		StartsAt           string `json:"starts_at"`
+		EndsAt             string `json:"ends_at"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON"})
@@ -56,7 +57,12 @@ func (h *Handler) createEvent(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ends_at must be ISO 8601"})
 	}
 
-	event, err := h.store.CreateEvent(c.Context(), organizerID, body.Name, &startsAtVal, &endsAtVal)
+	var welcomeDescription *string
+	if body.WelcomeDescription != "" {
+		welcomeDescription = &body.WelcomeDescription
+	}
+
+	event, err := h.store.CreateEvent(c.Context(), organizerID, body.Name, welcomeDescription, &startsAtVal, &endsAtVal)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 	}

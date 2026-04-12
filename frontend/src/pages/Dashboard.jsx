@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button.jsx'
 import { Card, CardContent } from '../components/ui/card.jsx'
 import { Input } from '../components/ui/input.jsx'
 import { Label } from '../components/ui/label.jsx'
+import { Textarea } from '../components/ui/textarea.jsx'
 import { Checkbox } from '../components/ui/checkbox.jsx'
 import { Calendar } from '../components/ui/calendar.jsx'
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover.jsx'
@@ -55,6 +56,7 @@ function toISO(date, time) {
 
 const EMPTY_FORM = {
   name: '',
+  description: '',
   date: null,
   startTime: '',
   endTime: '',
@@ -134,9 +136,12 @@ export default function Dashboard() {
 
     setCreating(true)
     try {
+      const payload = { name, starts_at: startsAtISO, ends_at: endsAtISO }
+      if (form.description.trim()) payload.welcome_description = form.description.trim()
+
       const res = await apiFetch('/events', {
         method: 'POST',
-        body: JSON.stringify({ name, starts_at: startsAtISO, ends_at: endsAtISO }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -222,6 +227,18 @@ export default function Dashboard() {
                 placeholder="e.g. React Conf 2026"
                 required
                 className="rounded-none h-11"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="event-description">Description (optional)</Label>
+              <Textarea
+                id="event-description"
+                value={form.description}
+                onChange={e => set('description', e.target.value)}
+                placeholder="Shown to attendees on the QR landing page"
+                className="min-h-20"
               />
             </div>
 

@@ -46,6 +46,11 @@ export default function ChannelDetail() {
     }
   }, [eventId, channelId])
 
+  const fetchMessages = useCallback(async () => {
+    const res = await apiFetch(`/events/${eventId}/channels/${channelId}/messages`)
+    if (res.ok) setMessages(await res.json())
+  }, [eventId, channelId])
+
   useEffect(() => {
     if (!localStorage.getItem('pager_token')) {
       navigate('/', { replace: true })
@@ -65,8 +70,8 @@ export default function ChannelDetail() {
         setChannel(found ?? null)
       }
 
-      // TODO: fetch message history once GET /events/:eventId/channels/:channelId/messages exists
-      setMessages([])
+      const msgRes = await apiFetch(`/events/${eventId}/channels/${channelId}/messages`)
+      if (msgRes.ok) setMessages(await msgRes.json())
 
       setLoading(false)
     }
@@ -126,6 +131,7 @@ export default function ChannelDetail() {
         return
       }
       setDialogOpen(false)
+      await fetchMessages()
     } catch {
       setSendError('Could not reach the server.')
     } finally {
@@ -218,9 +224,9 @@ export default function ChannelDetail() {
           <div className="flex flex-col">
             {messages.map((msg, i) => (
               <div key={i} className="border-b py-4 first:border-t">
-                <p className="text-sm">{msg.body}</p>
+                <p className="text-sm">{msg.Body}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {format(new Date(msg.sent_at), 'MMM d, yyyy \'at\' h:mm a')}
+                  {format(new Date(msg.SentAt), 'MMM d, yyyy \'at\' h:mm a')}
                 </p>
               </div>
             ))}
