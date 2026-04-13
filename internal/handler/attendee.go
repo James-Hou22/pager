@@ -227,3 +227,17 @@ func (h *Handler) sseChannel(c *fiber.Ctx) error {
 
 	return nil
 }
+
+func (h *Handler) verifyAttendeeToken(c *fiber.Ctx) error {
+	token := c.Get("X-Attendee-Token")
+	if token == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "missing token"})
+	}
+	if _, err := h.store.GetAttendeeSessionByToken(c.Context(), token); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+		}
+		log.Printf("verifyAttendeeToken: %v", err)
+	}
+	return c.JSON(fiber.Map{"valid": true})
+}

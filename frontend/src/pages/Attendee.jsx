@@ -61,6 +61,40 @@ export default function Attendee() {
         const chs = chRes.ok ? await chRes.json() : []
         setEvent(ev)
         setChannels(chs)
+        const savedToken = localStorage.getItem('pager_attendee_token')
+        const savedChanRaw = localStorage.getItem(`pager_channels_${eventId}`)
+        if(savedToken && savedChanRaw && Notification.permission === 'granted'){
+          try {
+            const vRes = await fetch('/attendee/verify', {
+              headers: {'X-Attendee-Token': savedToken},
+            })
+            if(vRes.ok){
+              const savedIds = JSON.parse(savedChanRaw)
+
+              for(const chanId of savedIds){
+                await init(chanId)
+              }
+            }
+
+            const historyResults = await Promise.all(
+              savedIds.map(chanId => 
+                fetch(`/attendee/channel/${chanId}/messages`, {
+                  headers: {'X-Attendee-Token': savedToken},
+                }).then(r => (r.ok ? r.json(): []))
+              )
+            )
+
+            setMessages(historyResults.flat())
+            setSubState('subscribed')
+            setView('subscribed')
+            return
+          } catch {
+            //network error. fall through to landing
+          }
+          //If the token is rejected or the request fails clear the stale state
+          localStorage.removeItem('pager_attendee_token')
+          localStorage.removeItem(`pager_channels_${eventId}`)
+        }
         setSelectedIds(new Set(chs.map(ch => ch.id)))
       } catch {
         setLoadError('Could not load event details.')
@@ -201,6 +235,7 @@ export default function Attendee() {
 
       if (token) {
         localStorage.setItem('pager_attendee_token', token)
+        localStorage.setItem(`pager_channels_${eventId}`, JSON.stringify([...selectedIds]))
       }
 
       // Open SSE connection per selected channel using the existing init() function
@@ -260,8 +295,8 @@ export default function Attendee() {
         <p className="text-xs text-[#555]">{status}</p>
 
         <button
-          disabled
-          className="text-sm text-[#555] cursor-default mt-2 underline underline-offset-4"
+          onClick={() => setView('landing')}
+          className="text-sm text-[#aaa] mt-2 underline underline-offset-4 cursor-pointer"
         >
           Manage subscriptions
         </button>

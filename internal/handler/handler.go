@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/James-Hou22/pager/internal/middleware"
 	"github.com/James-Hou22/pager/internal/push"
 	"github.com/James-Hou22/pager/internal/store"
+	"github.com/gofiber/fiber/v2"
 )
 
 type Handler struct {
@@ -38,6 +38,7 @@ func (h *Handler) Register(app *fiber.App) {
 	app.Get("/attendee/events/:eventId", h.getPublicEvent)
 	app.Get("/attendee/events/:eventId/channels", h.getPublicChannels)
 	app.Get("/attendee/channel/:channelId/messages", h.getAttendeeChannelMessages)
+	app.Get("/attendee/verify", h.verifyAttendeeToken)
 	app.Get("/manifest/:accessCode", h.getManifest)
 	app.Post("/channel/:id/sub", h.subscribeChannel)
 	app.Get("/channel/:id/sse", h.sseChannel)
