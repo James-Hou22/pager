@@ -74,20 +74,20 @@ export default function Attendee() {
               for(const chanId of savedIds){
                 await init(chanId)
               }
-            }
 
-            const historyResults = await Promise.all(
-              savedIds.map(chanId => 
-                fetch(`/attendee/channel/${chanId}/messages`, {
-                  headers: {'X-Attendee-Token': savedToken},
-                }).then(r => (r.ok ? r.json(): []))
+              const historyResults = await Promise.all(
+                savedIds.map(chanId =>
+                  fetch(`/attendee/channel/${chanId}/messages`, {
+                    headers: {'X-Attendee-Token': savedToken},
+                  }).then(r => (r.ok ? r.json(): []))
+                )
               )
-            )
 
-            setMessages(historyResults.flat())
-            setSubState('subscribed')
-            setView('subscribed')
-            return
+              setMessages(historyResults.flat())
+              setSubState('subscribed')
+              setView('subscribed')
+              return
+            }
           } catch {
             //network error. fall through to landing
           }

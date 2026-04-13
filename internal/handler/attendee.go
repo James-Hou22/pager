@@ -238,6 +238,7 @@ func (h *Handler) verifyAttendeeToken(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
 		}
 		log.Printf("verifyAttendeeToken: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 	}
 	return c.JSON(fiber.Map{"valid": true})
 }
