@@ -41,6 +41,7 @@ export default defineConfig({
       '/channel': 'http://localhost:8080',
       '/attendee/events': 'http://localhost:8080',
       '/attendee/channel': 'http://localhost:8080',
+      '/attendee/verify': 'http://localhost:8080',
       '/health': 'http://localhost:8080',
       '/vapid-public-key': 'http://localhost:8080',
       '/auth': 'http://localhost:8080',

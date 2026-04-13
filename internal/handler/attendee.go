@@ -217,6 +217,11 @@ func (h *Handler) sseChannel(c *fiber.Ctx) error {
 
 	c.Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
 		defer pubsub.Close()
+		// Flush headers immediately so the browser fires the EventSource 'open'
+		// event. Without this initial flush, fasthttp's buffered writer holds
+		// the 200 response in its buffer until the first message arrives.
+		fmt.Fprintf(w, ": ok\n\n")
+		w.Flush()
 		for msg := range pubsub.Channel() {
 			fmt.Fprintf(w, "data: %s\n\n", msg.Payload)
 			if err := w.Flush(); err != nil {
