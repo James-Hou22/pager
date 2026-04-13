@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -73,9 +74,23 @@ func main() {
 	// Static assets (JS, CSS, sw.js, manifest.json, etc.)
 	app.Static("/", "./web/static")
 
-	// Attendee SPA — lightweight bundle for /event/:id routes
-	app.Get("/event/*", func(c *fiber.Ctx) error {
-		return c.SendFile("./web/static/attendee.html")
+	// Attendee SPA — inject the correct manifest href for this specific event
+	// before sending, so iOS reads the right start_url from the raw HTML rather
+	// than after JS runs (which would be too late for manifest processing).
+	attendeeHTML, err := os.ReadFile("./web/static/attendee.html")
+	if err != nil {
+		log.Fatalf("read attendee.html: %v", err)
+	}
+	app.Get("/event/:accessCode", func(c *fiber.Ctx) error {
+		accessCode := c.Params("accessCode")
+		html := strings.Replace(
+			string(attendeeHTML),
+			`href="/manifest.json"`,
+			`href="/manifest/`+accessCode+`"`,
+			1,
+		)
+		c.Set("Content-Type", "text/html; charset=utf-8")
+		return c.SendString(html)
 	})
 
 	// Organizer SPA catch-all
