@@ -88,15 +88,7 @@ export default function Attendee() {
                 await init(chanId)
               }
 
-              const historyResults = await Promise.all(
-                savedIds.map(chanId =>
-                  fetch(`/attendee/channel/${chanId}/messages`, {
-                    headers: {'X-Attendee-Token': savedToken},
-                  }).then(r => (r.ok ? r.json(): []))
-                )
-              )
-
-              setMessages(historyResults.flat())
+              await loadMessageHistory(savedIds, savedToken)
               setSubState('subscribed')
               setView('subscribed')
               return
@@ -126,6 +118,20 @@ export default function Attendee() {
 
     loadEvent()
   }, [eventId])
+
+  async function loadMessageHistory(channelIds, token) {
+    const results = await Promise.all(
+      channelIds.map(chanId =>
+        fetch(`/attendee/channel/${chanId}/messages`, {
+          headers: { 'X-Attendee-Token': token },
+        }).then(r => (r.ok ? r.json() : []))
+      )
+    )
+    setMessages(results.flat().map(msg => ({
+      ...msg,
+      time: msg.sent_at ? new Date(msg.sent_at) : undefined,
+    })))
+  }
 
   // Adapted to accept channelId as a parameter instead of reading from closure.
   // All other behaviour is unchanged.
@@ -258,14 +264,7 @@ export default function Attendee() {
 
       // Fetch message history for all subscribed channels and populate the feed
       if (token) {
-        const historyResults = await Promise.all(
-          ids.map(chanId =>
-            fetch(`/attendee/channel/${chanId}/messages`, {
-              headers: { 'X-Attendee-Token': token },
-            }).then(r => (r.ok ? r.json() : []))
-          )
-        )
-        setMessages(historyResults.flat())
+        await loadMessageHistory(ids, token)
       }
 
       setSubState('subscribed')
