@@ -27,6 +27,19 @@ export default function Attendee() {
   const [loadError, setLoadError] = useState('')
   const [subError, setSubError] = useState('')
 
+  // Tell the SW which event URL to open when a notification is tapped.
+  // Uses controller directly (rather than .ready) so the message goes to the SW
+  // that's actually controlling this page. Also re-sends on controllerchange so
+  // a freshly-activated SW (via clients.claim()) gets the URL without a reload.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const payload = { type: 'STORE_EVENT_URL', url: window.location.pathname }
+    const send = () => navigator.serviceWorker.controller?.postMessage(payload)
+    send()
+    navigator.serviceWorker.addEventListener('controllerchange', send)
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', send)
+  }, [])
+
   useEffect(() => {
     if (!event) return
 
