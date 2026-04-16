@@ -1,8 +1,5 @@
 .env
 .env.local
-agents.md
-claude.md
 frontend/node_modules
 web/static/assets
 tmp/
-.claude/

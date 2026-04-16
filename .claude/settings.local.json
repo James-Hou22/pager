@@ -4,5 +4,8 @@
       "Bash(go test:*)",
       "Bash(go build:*)"
     ]
+  },
+  "enabledPlugins": {
+    "gopls-lsp@claude-plugins-official": true
   }
 }

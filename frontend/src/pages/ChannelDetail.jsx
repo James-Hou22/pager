@@ -3,19 +3,18 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { apiFetch } from '../lib/api.js'
 import { Button } from '../components/ui/button.jsx'
-import { Label } from '../components/ui/label.jsx'
 import { Textarea } from '../components/ui/textarea.jsx'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../components/ui/dialog.jsx'
 
 const CHANNEL_STATUS_STYLES = {
   inactive: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
   active:   'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
   closed:   'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+}
+
+const STATUS_HINT = {
+  inactive: 'Open this channel to start broadcasting.',
+  active:   'Channel is live — broadcast messages to subscribers.',
+  closed:   'This channel is closed. No further messages can be sent.',
 }
 
 export default function ChannelDetail() {
@@ -25,18 +24,11 @@ export default function ChannelDetail() {
   const [loading, setLoading] = useState(true)
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [statusError, setStatusError] = useState('')
-
-  // Message history state
-  // TODO: replace with real data once GET /events/:eventId/channels/:channelId/messages exists
   const [messages, setMessages] = useState([])
-
-  // Send message dialog
-  const [dialogOpen, setDialogOpen] = useState(false)
   const [messageBody, setMessageBody] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
 
-  // TODO: no single-channel endpoint exists yet — fetching all channels and filtering by channelId
   const fetchChannel = useCallback(async () => {
     const res = await apiFetch(`/events/${eventId}/channels`)
     if (res.ok) {
@@ -83,7 +75,6 @@ export default function ChannelDetail() {
     setStatusError('')
     setStatusUpdating(true)
     try {
-      // TODO: PATCH /events/:eventId/channels/:channelId/status does not exist yet
       const res = await apiFetch(`/events/${eventId}/channels/${channelId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
@@ -101,22 +92,7 @@ export default function ChannelDetail() {
     }
   }
 
-  function openSendDialog() {
-    setMessageBody('')
-    setSendError('')
-    setDialogOpen(true)
-  }
-
-  function handleDialogChange(open) {
-    if (!open) {
-      setMessageBody('')
-      setSendError('')
-    }
-    setDialogOpen(open)
-  }
-
-  async function handleSendMessage(e) {
-    e.preventDefault()
+  async function handleSend() {
     if (!messageBody.trim()) return
     setSendError('')
     setSending(true)
@@ -130,7 +106,7 @@ export default function ChannelDetail() {
         setSendError(json.error || 'Failed to send message.')
         return
       }
-      setDialogOpen(false)
+      setMessageBody('')
       await fetchMessages()
     } catch {
       setSendError('Could not reach the server.')
@@ -162,11 +138,10 @@ export default function ChannelDetail() {
 
   const isInactive = channel.Status === 'inactive'
   const isActive   = channel.Status === 'active'
-  const isClosed   = channel.Status === 'closed'
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background">
-      <header className="border-b px-4 h-14 flex items-center">
+    <div className="h-dvh flex flex-col bg-background overflow-hidden">
+      <header className="shrink-0 border-b px-4 h-14 flex items-center">
         <Link
           to={`/events/${eventId}`}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -175,97 +150,106 @@ export default function ChannelDetail() {
         </Link>
       </header>
 
-      <main className="flex-1 px-4 py-6 w-full max-w-2xl mx-auto">
-        {/* Channel header */}
-        <div className="flex flex-col gap-2 mb-8">
-          <h1 className="text-2xl font-semibold">{channel.Name}</h1>
-          <div>
-            <span className={`inline-block text-xs font-medium px-2 py-1 capitalize ${CHANNEL_STATUS_STYLES[channel.Status] ?? CHANNEL_STATUS_STYLES.inactive}`}>
-              {channel.Status}
-            </span>
-          </div>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden w-full max-w-2xl mx-auto">
 
-        {/* Action buttons */}
-        <div className="flex flex-col gap-3 mb-8">
-          <Button
-            className="rounded-none h-11 w-full"
-            disabled={isActive || statusUpdating}
-            onClick={() => updateStatus('active')}
-          >
-            Open Channel
-          </Button>
-          <Button
-            variant="outline"
-            className="rounded-none h-11 w-full"
-            disabled={isClosed || statusUpdating}
-            onClick={() => updateStatus('closed')}
-          >
-            Close Channel
-          </Button>
-          <Button
-            variant="outline"
-            className="rounded-none h-11 w-full"
-            onClick={openSendDialog}
-          >
-            Send Message
-          </Button>
-          {statusError && <p className="text-sm text-destructive">{statusError}</p>}
-        </div>
+        {/* Sticky top zone: channel info + compose */}
+        <div className="shrink-0 px-4 pt-6 pb-4 border-b">
 
-        {/* Message history */}
-        <h2 className="text-base font-semibold mb-4">Messages</h2>
-
-        {messages.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-8 text-center">
-            No messages sent yet.
-          </p>
-        ) : (
-          <div className="flex flex-col">
-            {messages.map((msg, i) => (
-              <div key={i} className="border-b py-4 first:border-t">
-                <p className="text-sm">{msg.Body}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {format(new Date(msg.SentAt), 'MMM d, yyyy \'at\' h:mm a')}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
-
-      {/* Send message dialog */}
-      <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="rounded-none max-w-sm w-[calc(100vw-2rem)]">
-          <DialogHeader>
-            <DialogTitle>Send message</DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleSendMessage} className="flex flex-col gap-4 mt-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="message-body">Message</Label>
-              <Textarea
-                id="message-body"
-                placeholder="Type your message…"
-                className="min-h-30"
-                value={messageBody}
-                onChange={e => setMessageBody(e.target.value)}
-                required
-              />
+          {/* Channel header */}
+          <div className="mb-6">
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <h1 className="text-2xl font-semibold leading-tight">{channel.Name}</h1>
+              <span className={`shrink-0 mt-1 inline-block text-xs font-medium px-2 py-1 capitalize ${CHANNEL_STATUS_STYLES[channel.Status] ?? CHANNEL_STATUS_STYLES.inactive}`}>
+                {channel.Status}
+              </span>
             </div>
 
-            {sendError && <p className="text-sm text-destructive">{sendError}</p>}
+            <p className="text-sm text-muted-foreground mb-4">
+              {STATUS_HINT[channel.Status]}
+            </p>
 
-            <Button
-              type="submit"
-              disabled={sending || !messageBody.trim()}
-              className="rounded-none h-11 w-full"
-            >
-              {sending ? 'Sending…' : 'Send'}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+            {/* Status control — demoted, context-sensitive */}
+            <div className="flex items-center gap-3">
+              {isInactive && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none"
+                  disabled={statusUpdating}
+                  onClick={() => updateStatus('active')}
+                >
+                  {statusUpdating ? 'Opening…' : 'Open Channel'}
+                </Button>
+              )}
+              {isActive && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none"
+                  disabled={statusUpdating}
+                  onClick={() => updateStatus('closed')}
+                >
+                  {statusUpdating ? 'Closing…' : 'Close Channel'}
+                </Button>
+              )}
+              {statusError && <p className="text-sm text-destructive">{statusError}</p>}
+            </div>
+          </div>
+
+          {/* Compose — primary action */}
+          <div className="flex flex-col gap-3">
+            <Textarea
+              placeholder={isActive ? 'Type a message to broadcast…' : 'Open the channel to send messages'}
+              className="min-h-28"
+              value={messageBody}
+              onChange={e => setMessageBody(e.target.value)}
+              disabled={!isActive || sending}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSend()
+              }}
+            />
+            {sendError && <p className="text-sm text-destructive">{sendError}</p>}
+            <div className="flex items-center justify-between gap-4">
+              <Button
+                className="rounded-none h-11 px-8"
+                disabled={sending || !messageBody.trim() || !isActive}
+                onClick={handleSend}
+              >
+                {sending ? 'Sending…' : 'Broadcast'}
+              </Button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Broadcast log label — fixed, does not scroll */}
+        <div className="shrink-0 px-4 pt-4 pb-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Broadcast Log
+          </p>
+        </div>
+
+        {/* Scrollable broadcast log — no scrollbar */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+          <div className="border">
+            {messages.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-8 text-center">
+                No messages sent yet.
+              </p>
+            ) : (
+              messages.map((msg, i) => (
+                <div key={i} className="px-4 py-3 border-b last:border-b-0">
+                  <p className="text-sm">{msg.Body}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {format(new Date(msg.SentAt), 'MMM d \'at\' h:mm a')}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+      </div>
     </div>
   )
 }
