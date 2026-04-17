@@ -30,6 +30,7 @@ export default function Attendee() {
   const [loadError, setLoadError] = useState('')
   const [subError, setSubError] = useState('')
   const [showInstallSteps, setShowInstallSteps] = useState(false)
+  const [canGoBack, setCanGoBack] = useState(false)
 
   // Tell the SW which event URL to open when a notification is tapped.
   // Uses controller directly (rather than .ready) so the message goes to the SW
@@ -159,12 +160,7 @@ export default function Attendee() {
     regRef.current = reg
 
     const existing = await reg.pushManager.getSubscription()
-    if (existing) {
-      await sendSubscriptionToServer(existing, channelId)
-      setSubState('subscribed')
-    } else {
-      setSubState('idle')
-    }
+    setSubState(existing ? 'subscribed' : 'idle')
   }
 
   // Kept for compatibility — not called by the new UI but preserved.
@@ -313,56 +309,6 @@ export default function Attendee() {
           <p className="text-xs text-[#555]">{status}</p>
         </div>
 
-        {/* Install prompt card */}
-        <div className="w-full max-w-md rounded-2xl bg-[#181818] border border-[#2b2b2b] p-5 mb-8">
-          <div className="flex items-start gap-3 mb-4">
-            <span className="text-2xl leading-none mt-0.5">📲</span>
-            <div>
-              <p className="font-semibold text-sm mb-1">Add to your home screen</p>
-              <p className="text-[#888] text-sm leading-relaxed">
-                Notifications only work through the installed app. Add it now to make sure you don't miss updates.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowInstallSteps(o => !o)}
-            className="w-full flex items-center justify-between text-sm font-medium text-[#c0c0c0] border border-[#2b2b2b] rounded-xl px-4 py-2.5 hover:bg-[#222] transition-colors cursor-pointer"
-          >
-            <span>How to install</span>
-            <svg
-              className={`w-4 h-4 text-[#666] transition-transform ${showInstallSteps ? 'rotate-180' : ''}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {showInstallSteps && (
-            <ol className="mt-4 flex flex-col gap-2 text-sm text-[#aaa] list-none pl-0">
-              {isIOS ? (
-                <>
-                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">1</span>Tap the <strong className="text-[#ccc] font-medium">Share</strong> button at the bottom of Safari</li>
-                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">2</span>Scroll down and tap <strong className="text-[#ccc] font-medium">Add to Home Screen</strong></li>
-                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">3</span>Tap <strong className="text-[#ccc] font-medium">Add</strong> in the top right</li>
-                </>
-              ) : isAndroid ? (
-                <>
-                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">1</span>Tap the <strong className="text-[#ccc] font-medium">menu</strong> button (⋮) in Chrome</li>
-                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">2</span>Tap <strong className="text-[#ccc] font-medium">Add to Home screen</strong></li>
-                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">3</span>Tap <strong className="text-[#ccc] font-medium">Add</strong></li>
-                </>
-              ) : (
-                <>
-                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">iOS</span>Safari → Share → Add to Home Screen</li>
-                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">Android</span>Chrome → Menu (⋮) → Add to Home screen</li>
-                </>
-              )}
-            </ol>
-          )}
-        </div>
-
         {/* Message feed */}
         {messages.length > 0 && (
           <div className="w-full max-w-md">
@@ -383,7 +329,7 @@ export default function Attendee() {
         )}
 
         <button
-          onClick={() => setView('landing')}
+          onClick={() => { setCanGoBack(true); setView('landing') }}
           className="text-sm text-[#555] mt-8 underline underline-offset-4 cursor-pointer hover:text-[#888] transition-colors"
         >
           Manage subscriptions
@@ -396,6 +342,16 @@ export default function Attendee() {
 
   return (
     <div className="min-h-dvh bg-[#0f0f0f] text-[#f0f0f0] flex flex-col px-5 py-10 gap-6 font-sans max-w-lg mx-auto">
+      {/* Back button — only shown when navigating from the messages view */}
+      {canGoBack && (
+        <button
+          onClick={() => setView('subscribed')}
+          className="self-start text-sm text-[#555] underline underline-offset-4 cursor-pointer hover:text-[#888] transition-colors"
+        >
+          ← Back to messages
+        </button>
+      )}
+
       {/* Brand */}
       <h1 className="text-2xl font-bold tracking-tight">
         Pa<span className="text-brand">g</span>er
