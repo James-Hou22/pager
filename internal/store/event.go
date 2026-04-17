@@ -21,6 +21,7 @@ type Event struct {
 	StartsAt           *time.Time
 	EndsAt             *time.Time
 	CreatedAt          time.Time
+	ChannelCount       int
 }
 
 // GetEventByID fetches a single event by its UUID.
@@ -63,9 +64,14 @@ func (s *Store) GetEventByAccessCode(ctx context.Context, accessCode string) (Ev
 // Returns an empty slice if none are found.
 func (s *Store) GetEventsByOrganizerID(ctx context.Context, organizerID string) ([]Event, error) {
 	rows, err := s.db.Query(ctx,
-		`SELECT id, organizer_id, name, access_code, status, welcome_description, starts_at, ends_at, created_at
-		 FROM events WHERE organizer_id = $1
-		 ORDER BY created_at DESC`,
+		`SELECT e.id, e.organizer_id, e.name, e.access_code, e.status,
+		        e.welcome_description, e.starts_at, e.ends_at, e.created_at,
+		        COUNT(c.id) AS channel_count
+		 FROM events e
+		 LEFT JOIN channels c ON c.event_id = e.id
+		 WHERE e.organizer_id = $1
+		 GROUP BY e.id
+		 ORDER BY e.created_at DESC`,
 		organizerID,
 	)
 	if err != nil {
@@ -76,7 +82,7 @@ func (s *Store) GetEventsByOrganizerID(ctx context.Context, organizerID string) 
 	events := []Event{}
 	for rows.Next() {
 		var e Event
-		if err := rows.Scan(&e.ID, &e.OrganizerID, &e.Name, &e.AccessCode, &e.Status, &e.WelcomeDescription, &e.StartsAt, &e.EndsAt, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.OrganizerID, &e.Name, &e.AccessCode, &e.Status, &e.WelcomeDescription, &e.StartsAt, &e.EndsAt, &e.CreatedAt, &e.ChannelCount); err != nil {
 			return nil, fmt.Errorf("store.GetEventsByOrganizerID: %w", err)
 		}
 		events = append(events, e)

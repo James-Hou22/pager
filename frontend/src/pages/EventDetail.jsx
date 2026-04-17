@@ -32,6 +32,12 @@ const CHANNEL_STATUS_STYLES = {
   closed:   'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
 }
 
+const CHANNEL_STATUS_LABEL = {
+  inactive: 'Draft',
+  active:   'Active',
+  closed:   'Closed',
+}
+
 export default function EventDetail() {
   const navigate = useNavigate()
   const { eventId } = useParams()
@@ -163,23 +169,24 @@ export default function EventDetail() {
         </Link>
       </header>
 
-      <main className="flex-1 px-4 py-6 w-full max-w-2xl mx-auto">
+      <main className="flex-1 w-full max-w-2xl mx-auto flex flex-col">
+
         {/* Event header */}
-        <div className="flex flex-col gap-2 mb-8">
-          <h1 className="text-2xl font-semibold">{event.Name}</h1>
+        <div className="px-4 pt-6 pb-5 border-b">
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <h1 className="text-2xl font-semibold leading-tight">{event.Name}</h1>
+            <span className={`shrink-0 mt-0.5 inline-block text-xs font-medium px-2 py-1 capitalize ${EVENT_STATUS_STYLES[event.Status] ?? EVENT_STATUS_STYLES.draft}`}>
+              {event.Status}
+            </span>
+          </div>
           <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
             <span>Starts: {formatEventTime(event.StartsAt)}</span>
             <span>Ends: {formatEventTime(event.EndsAt)}</span>
           </div>
-          <div className="mt-1">
-            <span className={`inline-block text-xs font-medium px-2 py-1 capitalize ${EVENT_STATUS_STYLES[event.Status] ?? EVENT_STATUS_STYLES.draft}`}>
-              {event.Status}
-            </span>
-          </div>
         </div>
 
-        {/* QR code section */}
-        <div className="border mb-6">
+        {/* QR code accordion */}
+        <div className="border-b">
           <button
             type="button"
             onClick={() => setQrOpen(o => !o)}
@@ -215,32 +222,40 @@ export default function EventDetail() {
           </div>
         </div>
 
-        {/* Channel list */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold">Channels</h2>
-          <Button className="rounded-none h-9" onClick={openDialog}>New Channel</Button>
+        {/* Channels section */}
+        <div className="flex items-center px-4 py-3 border-b border-border/40">
+          <h2 className="text-sm font-semibold">Channels</h2>
         </div>
 
-        {channels.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-8 text-center">
-            No channels yet. Create your first one.
-          </p>
-        ) : (
-          <div className="flex flex-col">
-            {channels.map(ch => (
-              <Link
-                key={ch.ID}
-                to={`/events/${eventId}/channels/${ch.ID}`}
-                className="flex items-center justify-between px-4 py-4 border-b first:border-t hover:bg-muted/50 transition-colors"
-              >
-                <span className="font-medium text-sm">{ch.Name}</span>
-                <span className={`text-xs font-medium px-2 py-1 capitalize ${CHANNEL_STATUS_STYLES[ch.Status] ?? CHANNEL_STATUS_STYLES.inactive}`}>
-                  {ch.Status}
+        <div className="flex flex-col">
+          {channels.map(ch => (
+            <Link
+              key={ch.ID}
+              to={`/events/${eventId}/channels/${ch.ID}`}
+              className="flex items-center justify-between px-4 py-4 border-b hover:bg-muted/50 transition-colors"
+            >
+              <span className="font-medium text-sm">{ch.Name}</span>
+              <div className="flex items-center gap-2.5">
+                <span className={`text-xs font-medium px-2 py-1 ${CHANNEL_STATUS_STYLES[ch.Status] ?? CHANNEL_STATUS_STYLES.inactive}`}>
+                  {CHANNEL_STATUS_LABEL[ch.Status] ?? ch.Status}
                 </span>
-              </Link>
-            ))}
-          </div>
-        )}
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+          ))}
+          <button
+            type="button"
+            onClick={openDialog}
+            className="flex items-center justify-center gap-2 px-4 py-4 border-b border-dashed text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors w-full"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            New Channel
+          </button>
+        </div>
       </main>
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>

@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { apiFetch } from '../lib/api.js'
 import { Button } from '../components/ui/button.jsx'
-import { Card, CardContent } from '../components/ui/card.jsx'
 import { Input } from '../components/ui/input.jsx'
 import { Label } from '../components/ui/label.jsx'
 import { Textarea } from '../components/ui/textarea.jsx'
@@ -44,6 +43,21 @@ function DatePicker({ label, value, onChange, id }) {
       </Popover>
     </div>
   )
+}
+
+const EVENT_STATUS_STYLES = {
+  draft:  'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
+  active: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+  closed: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+}
+
+function formatDateRange(startsAt, endsAt) {
+  if (!startsAt && !endsAt) return null
+  const start = startsAt ? format(new Date(startsAt), 'MMM d, yyyy') : null
+  const end   = endsAt   ? format(new Date(endsAt),   'MMM d, yyyy') : null
+  if (start && end && start === end) return start
+  if (start && end) return `${start} – ${end}`
+  return start ?? end
 }
 
 function toISO(date, time) {
@@ -172,40 +186,60 @@ export default function Dashboard() {
         <span className="text-xl font-black tracking-tighter">
           Pa<span className="text-primary">g</span>er
         </span>
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
           {email && (
             <span className="text-sm text-muted-foreground truncate hidden sm:block">{email}</span>
           )}
-          <Button variant="outline" size="sm" className="rounded-none shrink-0" onClick={logout}>
+          <button
+            type="button"
+            onClick={logout}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          >
             Log out
-          </Button>
+          </button>
         </div>
       </header>
 
       {/* Body */}
       <main className="flex-1 px-4 py-6 w-full max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold">Events</h1>
-          <Button className="rounded-none h-11" onClick={openDialog}>New Event</Button>
-        </div>
-
         {events.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-8 text-center">
-            You have no events yet. Create your first one.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {events.map(event => (
-              <Link key={event.ID} to={`/events/${event.ID}`}>
-                <Card className="rounded-none hover:bg-muted/50 transition-colors cursor-pointer">
-                  <CardContent className="py-4 px-4 flex items-center justify-between">
-                    <span className="font-medium">{event.Name}</span>
-                    <span className="text-xs text-muted-foreground capitalize">{event.Status}</span>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
+            <p className="font-semibold text-lg">No events yet</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Create your first event to get started. Attendees subscribe via QR code and you broadcast to them in real time.
+            </p>
+            <Button className="rounded-none h-11 mt-2" onClick={openDialog}>Create your first event</Button>
           </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-xl font-semibold">Events</h1>
+              <Button className="rounded-none h-11" onClick={openDialog}>New Event</Button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {events.map(event => {
+                const dateRange = formatDateRange(event.StartsAt, event.EndsAt)
+                const channelLabel = event.ChannelCount === 1 ? '1 channel' : `${event.ChannelCount} channels`
+                return (
+                  <Link key={event.ID} to={`/events/${event.ID}`}>
+                    <div className="border hover:bg-muted/50 transition-colors cursor-pointer px-4 py-5">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <span className="font-semibold text-base leading-tight">{event.Name}</span>
+                        <span className={`shrink-0 mt-0.5 inline-block text-xs font-medium px-2 py-1 capitalize ${EVENT_STATUS_STYLES[event.Status] ?? EVENT_STATUS_STYLES.draft}`}>
+                          {event.Status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        {dateRange && <span>{dateRange}</span>}
+                        {dateRange && <span aria-hidden>·</span>}
+                        <span>{channelLabel}</span>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </>
         )}
       </main>
 

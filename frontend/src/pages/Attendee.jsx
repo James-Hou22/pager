@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 
+const isIOS     = /iPad|iPhone|iPod/.test(navigator.userAgent)
+const isAndroid = /Android/.test(navigator.userAgent)
+
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
@@ -26,6 +29,7 @@ export default function Attendee() {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [loadError, setLoadError] = useState('')
   const [subError, setSubError] = useState('')
+  const [showInstallSteps, setShowInstallSteps] = useState(false)
 
   // Tell the SW which event URL to open when a notification is tapped.
   // Uses controller directly (rather than .ready) so the message goes to the SW
@@ -298,46 +302,92 @@ export default function Attendee() {
 
   if (view === 'subscribed') {
     return (
-      <div className="min-h-dvh bg-[#0f0f0f] text-[#f0f0f0] flex flex-col items-center justify-center px-5 gap-5 font-sans text-center">
-        <div className="text-5xl">🔔</div>
-        <h2 className="text-2xl font-bold">You're all set</h2>
-        <p className="text-[#aaa] text-base max-w-xs leading-relaxed">
-          You'll receive updates directly on your lock screen. No need to keep this page open.
-        </p>
-        <p className="text-xs text-[#555]">{status}</p>
+      <div className="min-h-dvh bg-[#0f0f0f] text-[#f0f0f0] flex flex-col items-center px-5 pt-16 pb-12 font-sans">
+        {/* Confirmation header */}
+        <div className="flex flex-col items-center text-center gap-3 mb-8">
+          <div className="text-5xl">🔔</div>
+          <h2 className="text-2xl font-bold">You're all set</h2>
+          <p className="text-[#aaa] text-base max-w-xs leading-relaxed">
+            You'll receive updates directly on your lock screen. No need to keep this page open.
+          </p>
+          <p className="text-xs text-[#555]">{status}</p>
+        </div>
 
-        <button
-          onClick={() => setView('landing')}
-          className="text-sm text-[#aaa] mt-2 underline underline-offset-4 cursor-pointer"
-        >
-          Manage subscriptions
-        </button>
+        {/* Install prompt card */}
+        <div className="w-full max-w-md rounded-2xl bg-[#181818] border border-[#2b2b2b] p-5 mb-8">
+          <div className="flex items-start gap-3 mb-4">
+            <span className="text-2xl leading-none mt-0.5">📲</span>
+            <div>
+              <p className="font-semibold text-sm mb-1">Add to your home screen</p>
+              <p className="text-[#888] text-sm leading-relaxed">
+                Notifications only work through the installed app. Add it now to make sure you don't miss updates.
+              </p>
+            </div>
+          </div>
 
-        {/* Message feed visible after subscribing */}
+          <button
+            type="button"
+            onClick={() => setShowInstallSteps(o => !o)}
+            className="w-full flex items-center justify-between text-sm font-medium text-[#c0c0c0] border border-[#2b2b2b] rounded-xl px-4 py-2.5 hover:bg-[#222] transition-colors cursor-pointer"
+          >
+            <span>How to install</span>
+            <svg
+              className={`w-4 h-4 text-[#666] transition-transform ${showInstallSteps ? 'rotate-180' : ''}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showInstallSteps && (
+            <ol className="mt-4 flex flex-col gap-2 text-sm text-[#aaa] list-none pl-0">
+              {isIOS ? (
+                <>
+                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">1</span>Tap the <strong className="text-[#ccc] font-medium">Share</strong> button at the bottom of Safari</li>
+                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">2</span>Scroll down and tap <strong className="text-[#ccc] font-medium">Add to Home Screen</strong></li>
+                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">3</span>Tap <strong className="text-[#ccc] font-medium">Add</strong> in the top right</li>
+                </>
+              ) : isAndroid ? (
+                <>
+                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">1</span>Tap the <strong className="text-[#ccc] font-medium">menu</strong> button (⋮) in Chrome</li>
+                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">2</span>Tap <strong className="text-[#ccc] font-medium">Add to Home screen</strong></li>
+                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">3</span>Tap <strong className="text-[#ccc] font-medium">Add</strong></li>
+                </>
+              ) : (
+                <>
+                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">iOS</span>Safari → Share → Add to Home Screen</li>
+                  <li className="flex items-start gap-2"><span className="text-[#555] font-mono text-xs mt-0.5">Android</span>Chrome → Menu (⋮) → Add to Home screen</li>
+                </>
+              )}
+            </ol>
+          )}
+        </div>
+
+        {/* Message feed */}
         {messages.length > 0 && (
-          <div className="w-full max-w-md flex flex-col gap-3 mt-4">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className="bg-surface border border-border rounded-xl px-4 py-3 text-[0.95rem] leading-relaxed animate-[slide-in_0.2s_ease]"
-              >
-                {msg.text}
-                {msg.time && (
-                  <time className="block text-xs text-[#666] mt-1">
-                    {msg.time.toLocaleTimeString()}
-                  </time>
-                )}
-              </div>
-            ))}
+          <div className="w-full max-w-md">
+            <p className="text-xs text-[#555] font-medium uppercase tracking-widest mb-1">Messages</p>
+            <div className="flex flex-col divide-y divide-[#1e1e1e]">
+              {messages.map((msg, i) => (
+                <div key={i} className="py-3">
+                  <p className="text-[0.95rem] leading-relaxed text-[#e0e0e0]">{msg.text}</p>
+                  {msg.time && (
+                    <time className="block text-xs text-[#555] mt-1">
+                      {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </time>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        <style>{`
-          @keyframes slide-in {
-            from { opacity: 0; transform: translateY(-6px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
+        <button
+          onClick={() => setView('landing')}
+          className="text-sm text-[#555] mt-8 underline underline-offset-4 cursor-pointer hover:text-[#888] transition-colors"
+        >
+          Manage subscriptions
+        </button>
       </div>
     )
   }
@@ -363,25 +413,42 @@ export default function Attendee() {
       {channels.length > 0 && (
         <div className="flex flex-col gap-3">
           <p className="text-xs text-[#888] font-medium uppercase tracking-widest">Channels</p>
-          {channels.map(ch => (
-            <label
-              key={ch.id}
-              className="flex items-start gap-3 bg-surface border border-border rounded-xl px-4 py-3 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.has(ch.id)}
-                onChange={() => toggleChannel(ch.id)}
-                className="mt-0.5 accent-brand w-4 h-4 shrink-0"
-              />
-              <div>
-                <p className="font-medium text-[0.95rem] leading-snug">{ch.name}</p>
-                {ch.description && (
-                  <p className="text-sm text-[#888] mt-0.5 leading-snug">{ch.description}</p>
-                )}
-              </div>
-            </label>
-          ))}
+          {channels.map(ch => {
+            const checked = selectedIds.has(ch.id)
+            return (
+              <label
+                key={ch.id}
+                className={`flex items-start gap-4 rounded-2xl px-4 py-4 cursor-pointer border transition-colors ${
+                  checked
+                    ? 'bg-[#1a1a1a] border-[#3a3a3a]'
+                    : 'bg-[#141414] border-[#222]'
+                }`}
+              >
+                {/* Custom checkbox */}
+                <div className={`mt-0.5 w-5 h-5 shrink-0 rounded-md border-2 flex items-center justify-center transition-colors ${
+                  checked ? 'bg-brand border-brand' : 'border-[#444] bg-transparent'
+                }`}>
+                  {checked && (
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
+                    </svg>
+                  )}
+                </div>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleChannel(ch.id)}
+                  className="sr-only"
+                />
+                <div>
+                  <p className="font-medium text-[0.95rem] leading-snug">{ch.name}</p>
+                  {ch.description && (
+                    <p className="text-sm text-[#888] mt-1 leading-snug">{ch.description}</p>
+                  )}
+                </div>
+              </label>
+            )
+          })}
         </div>
       )}
 
