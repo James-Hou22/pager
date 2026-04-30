@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pager — Broadcast to your crowd</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400;1,6..96,700&family=DM+Serif+Display:ital@0;1&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Lora:ital,wght@0,400;0,600;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap">
+  <style>
+    :root {
+      --bg: #F6F3EE;
+      --bg-alt: #EDE9E1;
+      --ink: #1C1916;
+      --ink-mid: #6B6560;
+      --ink-light: #A8A39C;
+      --accent: #C85A2C;
+      --accent-light: #F0D4C6;
+      --rule: #D8D2C8;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --max: 1160px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── LOGOTYPE ────────────────────────────────── */
+    .logotype {
+      font-family: var(--font-display);
+      font-size: 22px;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    /* ─── NAV ─────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--rule);
+      padding: 0 40px;
+    }
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--ink-mid);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 9px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: opacity .15s;
+      text-decoration: none;
+    }
+    .nav-cta:hover { opacity: .88; }
+
+    /* ─── HERO ────────────────────────────────────── */
+    .hero {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 72px 40px 80px;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 60px;
+      align-items: start;
+    }
+    .hero-left { padding-top: 8px; }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+    .hero-tag::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--accent);
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(44px, 5.5vw, 72px);
+      font-weight: 400;
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 24px;
+      text-wrap: pretty;
+    }
+    h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .hero-sub {
+      font-size: 18px;
+      font-weight: 300;
+      line-height: 1.65;
+      color: var(--ink-mid);
+      max-width: 480px;
+      margin-bottom: 40px;
+      text-wrap: pretty;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 13px 28px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: opacity .15s, transform .12s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+    .hero-note {
+      font-size: 13px;
+      color: var(--ink-light);
+    }
+
+    /* hero social proof strip */
+    .hero-proof {
+      margin-top: 52px;
+      padding-top: 28px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      gap: 36px;
+    }
+    .proof-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .proof-num {
+      font-family: var(--font-display);
+      font-size: 28px;
+      line-height: 1;
+      color: var(--ink);
+    }
+    .proof-label {
+      font-size: 12px;
+      color: var(--ink-mid);
+      margin-top: 3px;
+    }
+
+    /* ─── PHONE MOCKUP ──────────────────────────── */
+    .hero-right {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 16px;
+      padding-top: 0;
+    }
+    .phone-wrap {
+      position: relative;
+    }
+    .phone-wrap:nth-child(2) {
+      margin-top: 40px;
+    }
+    .phone {
+      width: 220px;
+      background: #1A1A1C;
+      border-radius: 44px;
+      padding: 8px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.08),
+        0 28px 64px rgba(28,25,22,.28),
+        0 6px 16px rgba(28,25,22,.14);
+      position: relative;
+    }
+    /* Side buttons */
+    .phone::before {
+      content: '';
+      position: absolute;
+      right: -3px;
+      top: 90px;
+      width: 3px;
+      height: 56px;
+      background: #2A2A2C;
+      border-radius: 0 2px 2px 0;
+      box-shadow: 0 70px 0 #2A2A2C;
+    }
+    .phone::after {
+      content: '';
+      position: absolute;
+      left: -3px;
+      top: 76px;
+      width: 3px;
+      height: 36px;
+      background: #2A2A2C;
+      border-radius: 2px 0 0 2px;
+      box-shadow: 0 48px 0 #2A2A2C, 0 90px 0 #2A2A2C;
+    }
+    .phone-notch {
+      /* Dynamic Island style pill */
+      width: 84px;
+      height: 26px;
+      background: #1A1A1C;
+      border-radius: 20px;
+      margin: 6px auto 8px;
+      position: relative;
+      z-index: 2;
+    }
+    .phone-screen {
+      background: var(--bg);
+      border-radius: 38px;
+      overflow: hidden;
+      min-height: 390px;
+      position: relative;
+    }
+
+    /* Notification card on lock screen */
+    .phone-lockscreen {
+      background: linear-gradient(160deg, #2C3E50 0%, #1a2534 100%);
+      min-height: 390px;
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+    .lockscreen-time {
+      text-align: center;
+      color: rgba(255,255,255,.9);
+      font-family: var(--font-body);
+      font-size: 36px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .lockscreen-date {
+      text-align: center;
+      color: rgba(255,255,255,.55);
+      font-size: 11px;
+      margin-bottom: 20px;
+    }
+    .notif-card {
+      background: rgba(255,255,255,.18);
+      backdrop-filter: blur(12px);
+      border-radius: 14px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      margin-bottom: 8px;
+    }
+    .notif-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .notif-icon {
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .notif-app {
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255,255,255,.7);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .notif-time {
+      font-size: 10px;
+      color: rgba(255,255,255,.4);
+      margin-left: auto;
+    }
+    .notif-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .notif-body {
+      font-size: 11px;
+      color: rgba(255,255,255,.75);
+      line-height: 1.4;
+    }
+
+    /* Organizer screen */
+    .phone-organizer {
+      background: var(--bg);
+      min-height: 390px;
+      padding: 0;
+    }
+    .org-topbar {
+      background: var(--ink);
+      color: #fff;
+      padding: 14px 14px 12px;
+    }
+    .org-event-name {
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(255,255,255,.5);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .org-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .org-channels {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .org-channel {
+      background: var(--bg-alt);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .org-channel-name {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .org-channel-sub {
+      font-size: 10px;
+      color: var(--ink-light);
+      margin-top: 1px;
+    }
+    .ch-badge {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+      letter-spacing: .04em;
+    }
+    .ch-badge.active { background: #D4EDD9; color: #2A7A3B; }
+    .ch-badge.inactive { background: var(--rule); color: var(--ink-mid); }
+    .org-compose {
+      margin: 0 12px;
+      background: var(--bg);
+      border: 1.5px solid var(--rule);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .org-compose-label {
+      font-size: 9px;
+      color: var(--ink-light);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 4px;
+    }
+    .org-compose-text {
+      font-size: 11px;
+      color: var(--ink-mid);
+    }
+    .org-send {
+      margin: 8px 12px 0;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 7px;
+      padding: 7px 0;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .phone-label {
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--ink-light);
+      white-space: nowrap;
+      font-style: italic;
+    }
+
+    /* ─── SECTION COMMON ────────────────────────── */
+    section { width: 100%; }
+    .section-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 3.5vw, 48px);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      text-wrap: pretty;
+    }
+    h2 em { font-style: italic; }
+
+    /* ─── HOW IT WORKS ────────────────────────── */
+    .how-section { background: var(--ink); }
+    .how-section .section-inner {
+      padding: 80px 40px;
+    }
+    .how-section .section-label { color: rgba(255,255,255,.4); }
+    .how-section h2 { color: #fff; margin-bottom: 56px; }
+    .how-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .how-step {
+      padding: 36px 32px;
+      border-right: 1px solid rgba(255,255,255,.1);
+      position: relative;
+    }
+    .how-step:last-child { border-right: none; }
+    .step-num {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-style: italic;
+      color: rgba(255,255,255,.12);
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+    .step-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 400;
+      color: #fff;
+      margin-bottom: 10px;
+      line-height: 1.25;
+    }
+    .step-body {
+      font-size: 14px;
+      font-weight: 300;
+      color: rgba(255,255,255,.55);
+      line-height: 1.65;
+    }
+    .step-detail {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .step-detail-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(255,255,255,.4);
+    }
+    .step-detail-item::before {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ─── FEATURES ───────────────────────────── */
+    .features-section { background: var(--bg); }
+    .features-section h2 { margin-bottom: 12px; }
+    .features-sub {
+      font-size: 17px;
+      font-weight: 300;
+      color: var(--ink-mid);
+      margin-bottom: 52px;
+      max-width: 520px;
+      text-wrap: pretty;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      background: var(--rule);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .feature-card {
+      background: var(--bg);
+      padding: 36px 36px 32px;
+      transition: background .15s;
+    }
+    .feature-card:hover { background: var(--bg-alt); }
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-light);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+    .feature-body {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--ink-mid);
+      line-height: 1.65;
+      text-wrap: pretty;
+    }
+
+    /* ─── USE CASES ──────────────────────────── */
+    .uses-section { background: var(--bg-alt); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+    .uses-section h2 { margin-bottom: 48px; }
+    .uses-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .use-card {
+      background: var(--bg);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--rule);
+    }
+    .use-card-img {
+      height: 140px;
+      background: var(--bg-alt);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Striped placeholder pattern */
+    .use-card-img::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 8px,
+        var(--rule) 8px,
+        var(--rule) 9px
+      );
+    }
+    .use-card-img--photo::before { display: none; }
+    .use-card-img-label {
+      font-family: monospace;
+      font-size: 10px;
+      color: var(--ink-mid);
+      position: relative;
+      z-index: 1;
+      background: var(--bg);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--rule);
+    }
+    .use-card-body { padding: 24px; }
+    .use-card-type {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .use-card-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 10px;
+      line-height: 1.25;
+    }
+    .use-card-body-text {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--ink-mid);
+      line-height: 1.65;
+      text-wrap: pretty;
+    }
+    .use-card-channels {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .channel-pill {
+      font-size: 11px;
+      background: var(--bg-alt);
+      color: var(--ink-mid);
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--rule);
+    }
+
+    /* ─── WAITLIST ───────────────────────────── */
+    .waitlist-section { background: var(--bg); }
+    .waitlist-inner {
+      max-width: 560px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 80px 40px;
+    }
+    .waitlist-inner h2 { margin-bottom: 16px; }
+    .waitlist-sub {
+      font-size: 17px;
+      font-weight: 300;
+      color: var(--ink-mid);
+      margin-bottom: 36px;
+      text-wrap: pretty;
+    }
+    .waitlist-form {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-alt);
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid var(--rule);
+    }
+    .waitlist-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--ink);
+      padding: 10px 14px;
+      outline: none;
+    }
+    .waitlist-input::placeholder { color: var(--ink-light); }
+    .waitlist-submit {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 22px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: opacity .15s;
+      white-space: nowrap;
+    }
+    .waitlist-submit:hover { opacity: .88; }
+    .waitlist-success {
+      display: none;
+      color: var(--ink-mid);
+      font-size: 15px;
+      margin-top: 16px;
+    }
+
+    /* ─── FOOTER ─────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 32px 40px;
+    }
+    .footer-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-copy {
+      font-size: 13px;
+      color: var(--ink-light);
+    }
+
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-right { display: none; }
+      .how-steps { grid-template-columns: 1fr; }
+      .how-step { border-right: none; border-bottom: 1px solid rgba(255,255,255,.1); }
+      .how-step:last-child { border-bottom: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .uses-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ─────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <div class="logotype">
+      <svg class="logo-mark" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="4" fill="currentColor"/>
+        <circle cx="14" cy="14" r="8" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <circle cx="14" cy="14" r="13" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+      </svg>
+      Pager
+    </div>
+    <ul class="nav-links">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#uses">Use cases</a></li>
+    </ul>
+    <a href="#waitlist" class="nav-cta">Join the waitlist</a>
+  </div>
+</nav>
+
+<!-- ─── HERO ─────────────────────────────────────── -->
+<div class="section-inner" style="padding-bottom:0; max-width:var(--max); margin:0 auto;">
+  <div class="hero" style="padding:72px 0 80px;">
+    <div class="hero-left">
+      <div class="hero-tag">Event broadcast, simplified</div>
+      <h1>Keep your crowd<br><em>in the loop,</em><br>effortlessly.</h1>
+      <p class="hero-sub">Pager lets organizers broadcast real-time messages directly to attendees' lock screens. No app to download. No chaos at the gate. Just a QR code and a single tap.</p>
+      <div class="hero-actions">
+        <a href="#waitlist" class="btn-primary">Join the waitlist</a>
+        <span class="hero-note">Free during early access</span>
+      </div>
+      <div class="hero-proof">
+        <div class="proof-item">
+          <span class="proof-num">30s</span>
+          <span class="proof-label">to set up an event</span>
+        </div>
+        <div class="proof-item">
+          <span class="proof-num">1 tap</span>
+          <span class="proof-label">for attendees to subscribe</span>
+        </div>
+        <div class="proof-item">
+          <span class="proof-num">Instant</span>
+          <span class="proof-label">lock-screen delivery</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-lockscreen">
+              <div class="lockscreen-time">9:41</div>
+              <div class="lockscreen-date">Sunday, April 20</div>
+              <div class="notif-card">
+                <div class="notif-header">
+                  <div class="notif-icon"></div>
+                  <span class="notif-app">Pager</span>
+                  <span class="notif-time">now</span>
+                </div>
+                <div class="notif-title">Main Stage — Doors open</div>
+                <div class="notif-body">Gates are now open. Bag check is on the east side.</div>
+              </div>
+              <div class="notif-card" style="opacity:.65">
+                <div class="notif-header">
+                  <div class="notif-icon"></div>
+                  <span class="notif-app">Pager</span>
+                  <span class="notif-time">12m ago</span>
+                </div>
+                <div class="notif-title">Food & Drink — New vendor open</div>
+                <div class="notif-body">Street Tacos Co. now serving near the south entrance.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="phone-label">Attendee view</span>
+      </div>
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-organizer">
+              <div class="org-topbar">
+                <div class="org-event-name">Summer Fest 2026</div>
+                <div class="org-title">Broadcast</div>
+              </div>
+              <div class="org-channels">
+                <div class="org-channel">
+                  <div>
+                    <div class="org-channel-name">Main Stage</div>
+                    <div class="org-channel-sub">4 messages sent</div>
+                  </div>
+                  <span class="ch-badge active">Active</span>
+                </div>
+                <div class="org-channel">
+                  <div>
+                    <div class="org-channel-name">Food & Drink</div>
+                    <div class="org-channel-sub">2 messages sent</div>
+                  </div>
+                  <span class="ch-badge active">Active</span>
+                </div>
+                <div class="org-channel">
+                  <div>
+                    <div class="org-channel-name">Emergencies</div>
+                    <div class="org-channel-sub">Ready</div>
+                  </div>
+                  <span class="ch-badge inactive">Inactive</span>
+                </div>
+              </div>
+              <div class="org-compose">
+                <div class="org-compose-label">New message → Main Stage</div>
+                <div class="org-compose-text">Headliner starts in 10 min…</div>
+              </div>
+              <div class="org-send">Send now</div>
+            </div>
+          </div>
+        </div>
+        <span class="phone-label">Organizer view</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── HOW IT WORKS ──────────────────────────────── -->
+<section id="how" class="how-section">
+  <div class="section-inner">
+    <div class="section-label">For organizers</div>
+    <h2>Three steps from setup<br>to <em>live broadcast.</em></h2>
+    <div class="how-steps" style="margin-top:40px;">
+      <div class="how-step">
+        <div class="step-num">01</div>
+        <div class="step-title">Create your event & channels</div>
+        <div class="step-body">Name your event, set a welcome message, and define your channels; Stage Announcements, Food & Drink, Emergencies, whatever fits your event.</div>
+        <div class="step-detail">
+          <div class="step-detail-item">Multiple channels per event</div>
+          <div class="step-detail-item">Name and describe each one</div>
+          <div class="step-detail-item">Open and close channels live</div>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">02</div>
+        <div class="step-title">Share a QR code, that's it</div>
+        <div class="step-body">Pager generates a unique QR code for your event. Print it on signage, put it in the app, project it on screen. Attendees scan and subscribe in one tap.</div>
+        <div class="step-detail">
+          <div class="step-detail-item">Auto-generated QR code</div>
+          <div class="step-detail-item">Attendees choose their channels</div>
+          <div class="step-detail-item">Works as a PWA — no app store</div>
+        </div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">03</div>
+        <div class="step-title">Broadcast whenever you need to</div>
+        <div class="step-body">Type your message, pick the channel, hit send. It lands on lock screens instantly. Every message is logged so nothing gets lost.</div>
+        <div class="step-detail">
+          <div class="step-detail-item">Instant lock-screen delivery</div>
+          <div class="step-detail-item">No rate limits per event</div>
+          <div class="step-detail-item">Full broadcast log</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ──────────────────────────────── -->
+<section id="features" class="features-section">
+  <div class="section-inner">
+    <div class="section-label">Features</div>
+    <h2>Kept simple for the<br><em>busiest of organizers.</em></h2>
+    <p class="features-sub">Pager is deliberately narrow in scope. We aim to provide a one-way broadcast, done exceptionally well.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="3" y="6" width="14" height="2" rx="1" fill="var(--accent)"/>
+            <rect x="3" y="10" width="10" height="2" rx="1" fill="var(--accent)" opacity=".6"/>
+            <rect x="3" y="14" width="7" height="2" rx="1" fill="var(--accent)" opacity=".3"/>
+          </svg>
+        </div>
+        <div class="feature-title">Multi-channel broadcasting</div>
+        <div class="feature-body">Separate channels for separate audiences. Attendees subscribe only to what matters to them — cutting through notification fatigue.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="3" fill="var(--accent)"/>
+            <path d="M5 10 Q5 5 10 5 Q15 5 15 10" stroke="var(--accent)" stroke-width="1.5" fill="none" opacity=".6"/>
+            <path d="M2 10 Q2 2 10 2 Q18 2 18 10" stroke="var(--accent)" stroke-width="1.5" fill="none" opacity=".3"/>
+          </svg>
+        </div>
+        <div class="feature-title">Lock-screen push notifications</div>
+        <div class="feature-body">Messages land on attendees' lock screens the moment you send them. No need to have the app open — it works just like any other notification.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="6" y="3" width="8" height="14" rx="2" stroke="var(--accent)" stroke-width="1.5"/>
+            <rect x="9" y="15" width="2" height="1" rx=".5" fill="var(--accent)"/>
+          </svg>
+        </div>
+        <div class="feature-title">No app to download</div>
+        <div class="feature-body">Pager installs as a Progressive Web App — a one-time prompt, no app store. Attendees are subscribed before the queue even moves.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="3" y="3" width="6" height="6" rx="1.5" fill="var(--accent)" opacity=".8"/>
+            <rect x="11" y="3" width="6" height="6" rx="1.5" fill="var(--accent)" opacity=".5"/>
+            <rect x="3" y="11" width="6" height="6" rx="1.5" fill="var(--accent)" opacity=".5"/>
+            <rect x="11" y="11" width="6" height="6" rx="1.5" fill="var(--accent)" opacity=".3"/>
+          </svg>
+        </div>
+        <div class="feature-title">QR code onboarding</div>
+        <div class="feature-body">One QR code handles the whole subscriber flow. Print it anywhere — signage, lanyards, your event website. Scanning is subscribing.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── USE CASES ──────────────────────────────── -->
+<section id="uses" class="uses-section">
+  <div class="section-inner">
+    <div class="section-label">Use cases</div>
+    <h2>Built for events that<br><em>can't afford chaos.</em></h2>
+    <div class="uses-grid" style="margin-top:48px;">
+      <div class="use-card">
+        <div class="use-card-img use-card-img--photo" style="background-image:url('/festival-photography.jpg');background-size:cover;background-position:center;"></div>
+        <div class="use-card-body">
+          <div class="use-card-type">Music & Festivals</div>
+          <div class="use-card-title">Multiple stages, one source of truth</div>
+          <div class="use-card-body-text">Keep 10,000 people updated on set times, delays, and logistics — across multiple stages — without a single paper flyer.</div>
+          <div class="use-card-channels">
+            <span class="channel-pill">Main Stage</span>
+            <span class="channel-pill">Side Stage</span>
+            <span class="channel-pill">Food Courts</span>
+            <span class="channel-pill">Emergencies</span>
+          </div>
+        </div>
+      </div>
+      <div class="use-card">
+        <div class="use-card-img use-card-img--photo" style="background-image:url('/conference-photography.jpg');background-size:cover;background-position:center;"></div>
+        <div class="use-card-body">
+          <div class="use-card-type">Conferences & Summits</div>
+          <div class="use-card-title">Session changes, room updates, last-minute shifts</div>
+          <div class="use-card-body-text">Attendees subscribe to the tracks they care about. When a speaker is moved or a session cancelled, the right people know immediately.</div>
+          <div class="use-card-channels">
+            <span class="channel-pill">Track A</span>
+            <span class="channel-pill">Track B</span>
+            <span class="channel-pill">Networking</span>
+            <span class="channel-pill">Logistics</span>
+          </div>
+        </div>
+      </div>
+      <div class="use-card">
+        <div class="use-card-img use-card-img--photo" style="background-image:url('/corporate-event.jpg');background-size:cover;background-position:center;"></div>
+        <div class="use-card-body">
+          <div class="use-card-type">Corporate Events</div>
+          <div class="use-card-title">Quiet, professional communication at scale</div>
+          <div class="use-card-body-text">No loudspeakers, no disruption. Push schedule reminders, dinner seating, or executive session changes directly to the right attendees.</div>
+          <div class="use-card-channels">
+            <span class="channel-pill">Agenda Updates</span>
+            <span class="channel-pill">Dining</span>
+            <span class="channel-pill">VIP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── WAITLIST ──────────────────────────────── -->
+<section id="waitlist" class="waitlist-section">
+  <div class="waitlist-inner">
+    <div class="section-label" style="text-align:center;">Early access</div>
+    <h2>Be the first to<br><em>run an event with Pager.</em></h2>
+    <p class="waitlist-sub">We're opening up to a small group of organizers first. Leave your email and we'll be in touch before the public launch.</p>
+    <form class="waitlist-form" onsubmit="handleWaitlist(event)">
+      <input class="waitlist-input" type="email" placeholder="your@email.com" required>
+      <button class="waitlist-submit" type="submit">Get early access</button>
+    </form>
+    <p class="waitlist-success" id="waitlist-success">&#10003; You're on the list. We'll be in touch soon.</p>
+  </div>
+</section>
+
+<!-- ─── FOOTER ──────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="logotype" style="font-size:18px;">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="4" fill="currentColor"/>
+        <circle cx="14" cy="14" r="8" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <circle cx="14" cy="14" r="13" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+      </svg>
+      Pager
+    </div>
+    <span class="footer-copy">&copy; 2026 Pager. Real-time event broadcast.</span>
+  </div>
+</footer>
+
+<script>
+  async function handleWaitlist(e) {
+    e.preventDefault();
+    const input = e.target.querySelector('input[type="email"]');
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    btn.textContent = 'Joining…';
+
+    try {
+      const res = await fetch('/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: input.value }),
+      });
+      if (!res.ok) throw new Error();
+      document.querySelector('.waitlist-form').style.display = 'none';
+      document.getElementById('waitlist-success').style.display = 'block';
+    } catch {
+      btn.disabled = false;
+      btn.textContent = 'Get early access';
+      input.setCustomValidity('Something went wrong — please try again.');
+      input.reportValidity();
+      input.setCustomValidity('');
+    }
+  }
+</script>
+
+</body>
+</html>

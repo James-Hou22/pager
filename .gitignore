@@ -3,3 +3,4 @@
 frontend/node_modules
 web/static/assets
 tmp/
+waitlist.txt

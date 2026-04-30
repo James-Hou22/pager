@@ -71,6 +71,11 @@ func main() {
 	// API routes
 	h.Register(app)
 
+	// Landing page at root
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendFile("./web/static/landing-page.html")
+	})
+
 	// Static assets (JS, CSS, sw.js, manifest.json, etc.)
 	app.Static("/", "./web/static")
 
