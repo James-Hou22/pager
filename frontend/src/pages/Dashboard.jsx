@@ -92,7 +92,7 @@ export default function Dashboard() {
 
   const logout = useCallback(() => {
     localStorage.removeItem('pager_token')
-    navigate('/', { replace: true })
+    navigate('/login', { replace: true })
   }, [navigate])
 
   const fetchEvents = useCallback(async () => {
@@ -102,14 +102,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!localStorage.getItem('pager_token')) {
-      navigate('/', { replace: true })
+      navigate('/login', { replace: true })
       return
     }
     async function init() {
       const res = await apiFetch('/auth/me')
       if (res.status === 401) {
         localStorage.removeItem('pager_token')
-        navigate('/', { replace: true })
+        navigate('/login', { replace: true })
         return
       }
       const me = await res.json()

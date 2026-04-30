@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/James-Hou22/pager/internal/middleware"
 	"github.com/James-Hou22/pager/internal/push"
@@ -11,13 +12,15 @@ import (
 )
 
 type Handler struct {
-	store     *store.Store
-	fanout    *push.Fanout
-	jwtSecret []byte
+	store        *store.Store
+	fanout       *push.Fanout
+	jwtSecret    []byte
+	waitlistMu   sync.Mutex
+	waitlistPath string
 }
 
 func New(s *store.Store, f *push.Fanout, jwtSecret []byte) *Handler {
-	return &Handler{store: s, fanout: f, jwtSecret: jwtSecret}
+	return &Handler{store: s, fanout: f, jwtSecret: jwtSecret, waitlistPath: "waitlist.txt"}
 }
 
 func (h *Handler) Register(app *fiber.App) {
@@ -34,6 +37,8 @@ func (h *Handler) Register(app *fiber.App) {
 	app.Get("/events/:eventId/channels/:channelId/messages", middleware.Auth(h.jwtSecret), h.getChannelMessages)
 
 	app.Post("/channel/:id/blast", middleware.Auth(h.jwtSecret), h.Blast)
+
+	app.Post("/waitlist", h.joinWaitlist)
 
 	app.Get("/attendee/events/:eventId", h.getPublicEvent)
 	app.Get("/attendee/events/:eventId/channels", h.getPublicChannels)

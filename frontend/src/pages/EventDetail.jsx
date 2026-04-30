@@ -68,7 +68,7 @@ export default function EventDetail() {
 
   useEffect(() => {
     if (!localStorage.getItem('pager_token')) {
-      navigate('/', { replace: true })
+      navigate('/login', { replace: true })
       return
     }
 
@@ -76,7 +76,7 @@ export default function EventDetail() {
       const res = await apiFetch('/events')
       if (res.status === 401) {
         localStorage.removeItem('pager_token')
-        navigate('/', { replace: true })
+        navigate('/login', { replace: true })
         return
       }
       const events = await res.json()

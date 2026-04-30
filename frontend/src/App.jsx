@@ -7,7 +7,7 @@ import ChannelDetail from './pages/ChannelDetail.jsx'
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Auth />} />
+      <Route path="/login" element={<Auth />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/events/:eventId" element={<EventDetail />} />
       <Route path="/events/:eventId/channels/:channelId" element={<ChannelDetail />} />

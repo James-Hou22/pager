@@ -45,7 +45,7 @@ export default function ChannelDetail() {
 
   useEffect(() => {
     if (!localStorage.getItem('pager_token')) {
-      navigate('/', { replace: true })
+      navigate('/login', { replace: true })
       return
     }
 
@@ -53,7 +53,7 @@ export default function ChannelDetail() {
       const res = await apiFetch(`/events/${eventId}/channels`)
       if (res.status === 401) {
         localStorage.removeItem('pager_token')
-        navigate('/', { replace: true })
+        navigate('/login', { replace: true })
         return
       }
       if (res.ok) {
