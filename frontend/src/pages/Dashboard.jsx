@@ -45,11 +45,6 @@ function DatePicker({ label, value, onChange, id }) {
   )
 }
 
-const EVENT_STATUS_STYLES = {
-  draft:  'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
-  closed: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
-}
 
 function formatDateRange(startsAt, endsAt) {
   if (!startsAt && !endsAt) return null
@@ -225,9 +220,11 @@ export default function Dashboard() {
                     <div className="border hover:bg-muted/50 transition-colors cursor-pointer px-4 py-5">
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <span className="font-semibold text-base leading-tight">{event.Name}</span>
-                        <span className={`shrink-0 mt-0.5 inline-block text-xs font-medium px-2 py-1 capitalize ${EVENT_STATUS_STYLES[event.Status] ?? EVENT_STATUS_STYLES.draft}`}>
-                          {event.Status}
-                        </span>
+                        {event.IsClosed && (
+                          <span className="shrink-0 mt-0.5 inline-block text-xs font-medium px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                            Closed
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         {dateRange && <span>{dateRange}</span>}

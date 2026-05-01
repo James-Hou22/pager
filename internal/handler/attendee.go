@@ -18,14 +18,13 @@ type publicEvent struct {
 	ID                 string  `json:"id"`
 	Name               string  `json:"name"`
 	WelcomeDescription *string `json:"welcome_description"`
-	Status             string  `json:"status"`
+	IsClosed           bool    `json:"is_closed"`
 }
 
 type publicChannel struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
-	Status      string  `json:"status"`
 }
 
 // GET /attendee/events/:accessCode
@@ -47,7 +46,7 @@ func (h *Handler) getPublicEvent(c *fiber.Ctx) error {
 		ID:                 event.ID,
 		Name:               event.Name,
 		WelcomeDescription: event.WelcomeDescription,
-		Status:             string(event.Status),
+		IsClosed:           event.IsClosed,
 	})
 }
 
@@ -78,7 +77,6 @@ func (h *Handler) getPublicChannels(c *fiber.Ctx) error {
 			ID:          ch.ID,
 			Name:        ch.Name,
 			Description: ch.Description,
-			Status:      string(ch.Status),
 		}
 	}
 	return c.JSON(result)

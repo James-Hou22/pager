@@ -20,23 +20,6 @@ function formatEventTime(iso) {
   return format(new Date(iso), 'MMM d, yyyy \'at\' h:mm a')
 }
 
-const EVENT_STATUS_STYLES = {
-  draft:  'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
-  closed: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
-}
-
-const CHANNEL_STATUS_STYLES = {
-  inactive: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
-  active:   'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
-  closed:   'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
-}
-
-const CHANNEL_STATUS_LABEL = {
-  inactive: 'Draft',
-  active:   'Active',
-  closed:   'Closed',
-}
 
 export default function EventDetail() {
   const navigate = useNavigate()
@@ -175,9 +158,11 @@ export default function EventDetail() {
         <div className="px-4 pt-6 pb-5 border-b">
           <div className="flex items-start justify-between gap-4 mb-2">
             <h1 className="text-2xl font-semibold leading-tight">{event.Name}</h1>
-            <span className={`shrink-0 mt-0.5 inline-block text-xs font-medium px-2 py-1 capitalize ${EVENT_STATUS_STYLES[event.Status] ?? EVENT_STATUS_STYLES.draft}`}>
-              {event.Status}
-            </span>
+            {event.IsClosed && (
+              <span className="shrink-0 mt-0.5 inline-block text-xs font-medium px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                Closed
+              </span>
+            )}
           </div>
           <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
             <span>Starts: {formatEventTime(event.StartsAt)}</span>
@@ -235,14 +220,9 @@ export default function EventDetail() {
               className="flex items-center justify-between px-4 py-4 border-b hover:bg-muted/50 transition-colors"
             >
               <span className="font-medium text-sm">{ch.Name}</span>
-              <div className="flex items-center gap-2.5">
-                <span className={`text-xs font-medium px-2 py-1 ${CHANNEL_STATUS_STYLES[ch.Status] ?? CHANNEL_STATUS_STYLES.inactive}`}>
-                  {CHANNEL_STATUS_LABEL[ch.Status] ?? ch.Status}
-                </span>
-                <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
+              <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
           ))}
           <button

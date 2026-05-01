@@ -8,6 +8,13 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// PubSub is the subscription handle returned by Subscribe.
+// Satisfied by *redis.PubSub.
+type PubSub interface {
+	Channel(...redis.ChannelOption) <-chan *redis.Message
+	Close() error
+}
+
 // ErrNotFound is returned when a requested record does not exist.
 var ErrNotFound = errors.New("not found")
 

@@ -11,12 +11,12 @@ import (
 )
 
 type Handler struct {
-	store     *store.Store
+	store     Storer
 	fanout    *push.Fanout
 	jwtSecret []byte
 }
 
-func New(s *store.Store, f *push.Fanout, jwtSecret []byte) *Handler {
+func New(s Storer, f *push.Fanout, jwtSecret []byte) *Handler {
 	return &Handler{store: s, fanout: f, jwtSecret: jwtSecret}
 }
 
@@ -27,10 +27,9 @@ func (h *Handler) Register(app *fiber.App) {
 
 	app.Get("/events", middleware.Auth(h.jwtSecret), h.listEvents)
 	app.Post("/events", middleware.Auth(h.jwtSecret), h.createEvent)
-	app.Patch("/events/:eventId/status", middleware.Auth(h.jwtSecret), h.updateEventStatus)
+	app.Post("/events/:eventId/close", middleware.Auth(h.jwtSecret), h.closeEvent)
 	app.Get("/events/:eventId/channels", middleware.Auth(h.jwtSecret), h.listChannels)
 	app.Post("/events/:eventId/channels", middleware.Auth(h.jwtSecret), h.createChannel)
-	app.Patch("/events/:eventId/channels/:channelId/status", middleware.Auth(h.jwtSecret), h.updateChannelStatus)
 	app.Get("/events/:eventId/channels/:channelId/messages", middleware.Auth(h.jwtSecret), h.getChannelMessages)
 
 	app.Post("/channel/:id/blast", middleware.Auth(h.jwtSecret), h.Blast)
@@ -48,20 +47,20 @@ func (h *Handler) Register(app *fiber.App) {
 
 // verifyEventOwnership fetches the event by ID and confirms the given organizerID
 // owns it. On failure it writes the appropriate HTTP response and returns a
-// non-nil error so the caller can do:
-//
-//	event, err := h.verifyEventOwnership(c, eventID, organizerID)
-//	if err != nil { return err }
+// non-nil error so callers can short-circuit with `return nil`.
 func (h *Handler) verifyEventOwnership(c *fiber.Ctx, eventID, organizerID string) (store.Event, error) {
 	event, err := h.store.GetEventByID(c.Context(), eventID)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return store.Event{}, c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "event not found"})
+			_ = c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "event not found"})
+		} else {
+			_ = c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 		}
-		return store.Event{}, c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
+		return store.Event{}, err
 	}
 	if event.OrganizerID != organizerID {
-		return store.Event{}, c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "you do not own this event"})
+		_ = c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "you do not own this event"})
+		return store.Event{}, fiber.ErrForbidden
 	}
 	return event, nil
 }
