@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"os"
+	"errors"
 	"strings"
 
+	"github.com/James-Hou22/pager/internal/store"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -22,16 +23,10 @@ func (h *Handler) joinWaitlist(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "valid email required"})
 	}
 
-	h.waitlistMu.Lock()
-	defer h.waitlistMu.Unlock()
-
-	f, err := os.OpenFile(h.waitlistPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
-	}
-	defer f.Close()
-
-	if _, err := f.WriteString(email + "\n"); err != nil {
+	if err := h.store.AddToWaitlist(c.Context(), email); err != nil {
+		if errors.Is(err, store.ErrConflict) {
+			return c.SendStatus(fiber.StatusOK)
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 	}
 

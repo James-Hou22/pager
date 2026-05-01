@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"github.com/James-Hou22/pager/internal/middleware"
 	"github.com/James-Hou22/pager/internal/push"
@@ -12,15 +11,13 @@ import (
 )
 
 type Handler struct {
-	store        *store.Store
-	fanout       *push.Fanout
-	jwtSecret    []byte
-	waitlistMu   sync.Mutex
-	waitlistPath string
+	store     *store.Store
+	fanout    *push.Fanout
+	jwtSecret []byte
 }
 
 func New(s *store.Store, f *push.Fanout, jwtSecret []byte) *Handler {
-	return &Handler{store: s, fanout: f, jwtSecret: jwtSecret, waitlistPath: "waitlist.txt"}
+	return &Handler{store: s, fanout: f, jwtSecret: jwtSecret}
 }
 
 func (h *Handler) Register(app *fiber.App) {
