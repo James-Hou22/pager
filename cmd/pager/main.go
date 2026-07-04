@@ -23,7 +23,7 @@ func main() {
 
 	redisAddr := os.Getenv("REDIS_URL")
 	if redisAddr == "" {
-		redisAddr = "localhost:6379"
+		log.Fatal("REDIS_URL must be set")
 	}
 
 	port := os.Getenv("PORT")
