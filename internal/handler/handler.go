@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/James-Hou22/pager/internal/middleware"
 	"github.com/James-Hou22/pager/internal/push"
@@ -54,6 +55,7 @@ func (h *Handler) verifyEventOwnership(c *fiber.Ctx, eventID, organizerID string
 		if errors.Is(err, store.ErrNotFound) {
 			_ = c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "event not found"})
 		} else {
+			log.Printf("verifyEventOwnership: %v", err)
 			_ = c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 		}
 		return store.Event{}, err
@@ -90,6 +92,7 @@ func (h *Handler) Blast(c *fiber.Ctx) error {
 		if errors.Is(err, store.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "channel not found"})
 		}
+		log.Printf("Blast: GetEventByChannelID: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 	}
 
@@ -100,14 +103,18 @@ func (h *Handler) Blast(c *fiber.Ctx) error {
 	// Persist to Postgres first — abort if the write fails so no message is
 	// delivered without a durable record.
 	if _, err := h.store.CreateMessage(c.Context(), id, body.Message); err != nil {
+		log.Printf("Blast: CreateMessage: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 	}
 
 	if err := h.store.AddMessage(c.Context(), id, body.Message); err != nil {
+		log.Printf("Blast: AddMessage: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 	}
 
 	if err := h.store.Publish(c.Context(), id, body.Message); err != nil {
+		log.Printf("Blast: Publish: %v", err)
+
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal error"})
 	}
 

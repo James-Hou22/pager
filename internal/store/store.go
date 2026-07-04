@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -38,6 +39,16 @@ func New(rdb *redis.Client, db *pgxpool.Pool) *Store {
 	return &Store{rdb: rdb, db: db}
 }
 
+// NewRedisClient connects using addr. If addr is a full connection URL
+// (redis://[:password@]host:port), credentials embedded in it are used;
+// otherwise addr is treated as a bare host:port and REDIS_PASSWORD (if set)
+// is used to authenticate.
 func NewRedisClient(addr string) *redis.Client {
-	return redis.NewClient(&redis.Options{Addr: addr})
+	if opts, err := redis.ParseURL(addr); err == nil {
+		return redis.NewClient(opts)
+	}
+	return redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: os.Getenv("REDIS_PASSWORD"),
+	})
 }
