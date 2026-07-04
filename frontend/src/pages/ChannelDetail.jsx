@@ -5,25 +5,11 @@ import { apiFetch } from '../lib/api.js'
 import { Button } from '../components/ui/button.jsx'
 import { Textarea } from '../components/ui/textarea.jsx'
 
-const CHANNEL_STATUS_STYLES = {
-  inactive: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
-  active:   'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
-  closed:   'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
-}
-
-const STATUS_HINT = {
-  inactive: 'Open this channel to start broadcasting.',
-  active:   'Channel is live — broadcast messages to subscribers.',
-  closed:   'This channel is closed. No further messages can be sent.',
-}
-
 export default function ChannelDetail() {
   const navigate = useNavigate()
   const { eventId, channelId } = useParams()
   const [channel, setChannel] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [statusUpdating, setStatusUpdating] = useState(false)
-  const [statusError, setStatusError] = useState('')
   const [messages, setMessages] = useState([])
   const [messageBody, setMessageBody] = useState('')
   const [sending, setSending] = useState(false)
@@ -71,27 +57,6 @@ export default function ChannelDetail() {
     init()
   }, [eventId, channelId, navigate])
 
-  async function updateStatus(status) {
-    setStatusError('')
-    setStatusUpdating(true)
-    try {
-      const res = await apiFetch(`/events/${eventId}/channels/${channelId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      })
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}))
-        setStatusError(json.error || 'Failed to update status.')
-        return
-      }
-      await fetchChannel()
-    } catch {
-      setStatusError('Could not reach the server.')
-    } finally {
-      setStatusUpdating(false)
-    }
-  }
-
   async function handleSend() {
     if (!messageBody.trim()) return
     setSendError('')
@@ -136,9 +101,6 @@ export default function ChannelDetail() {
     )
   }
 
-  const isInactive = channel.Status === 'inactive'
-  const isActive   = channel.Status === 'active'
-
   return (
     <div className="h-dvh flex flex-col bg-background overflow-hidden">
       <header className="shrink-0 border-b px-4 h-14 flex items-center">
@@ -159,40 +121,6 @@ export default function ChannelDetail() {
           <div className="mb-6">
             <div className="flex items-start justify-between gap-4 mb-2">
               <h1 className="text-2xl font-semibold leading-tight">{channel.Name}</h1>
-              <span className={`shrink-0 mt-1 inline-block text-xs font-medium px-2 py-1 capitalize ${CHANNEL_STATUS_STYLES[channel.Status] ?? CHANNEL_STATUS_STYLES.inactive}`}>
-                {channel.Status}
-              </span>
-            </div>
-
-            <p className="text-sm text-muted-foreground mb-4">
-              {STATUS_HINT[channel.Status]}
-            </p>
-
-            {/* Status control — demoted, context-sensitive */}
-            <div className="flex items-center gap-3">
-              {isInactive && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-none"
-                  disabled={statusUpdating}
-                  onClick={() => updateStatus('active')}
-                >
-                  {statusUpdating ? 'Opening…' : 'Open Channel'}
-                </Button>
-              )}
-              {isActive && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-none"
-                  disabled={statusUpdating}
-                  onClick={() => updateStatus('closed')}
-                >
-                  {statusUpdating ? 'Closing…' : 'Close Channel'}
-                </Button>
-              )}
-              {statusError && <p className="text-sm text-destructive">{statusError}</p>}
             </div>
           </div>
 
