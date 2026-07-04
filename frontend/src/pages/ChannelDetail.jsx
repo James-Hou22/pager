@@ -127,11 +127,11 @@ export default function ChannelDetail() {
           {/* Compose — primary action */}
           <div className="flex flex-col gap-3">
             <Textarea
-              placeholder={isActive ? 'Type a message to broadcast…' : 'Open the channel to send messages'}
+              placeholder="Type a message to broadcast…"
               className="min-h-28"
               value={messageBody}
               onChange={e => setMessageBody(e.target.value)}
-              disabled={!isActive || sending}
+              disabled={sending}
               onKeyDown={e => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSend()
               }}
@@ -140,7 +140,7 @@ export default function ChannelDetail() {
             <div className="flex items-center justify-between gap-4">
               <Button
                 className="rounded-none h-11 px-8"
-                disabled={sending || !messageBody.trim() || !isActive}
+                disabled={sending || !messageBody.trim()}
                 onClick={handleSend}
               >
                 {sending ? 'Sending…' : 'Broadcast'}
