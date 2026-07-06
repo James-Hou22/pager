@@ -1,4 +1,8 @@
+//Change this if you want to work on phone UI/UX in local dev
+const FORCE_PWA_VIEW = false
+
 const isPwa =
+  FORCE_PWA_VIEW ||
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true
 

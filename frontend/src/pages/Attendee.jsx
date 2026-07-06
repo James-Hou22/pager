@@ -31,6 +31,7 @@ export default function Attendee() {
   const [subError, setSubError] = useState('')
   const [showInstallSteps, setShowInstallSteps] = useState(false)
   const [canGoBack, setCanGoBack] = useState(false)
+  const [closedChannels, setClosedChannels] = useState(new Set())
 
   // Tell the SW which event URL to open when a notification is tapped.
   // Uses controller directly (rather than .ready) so the message goes to the SW
@@ -101,7 +102,7 @@ export default function Attendee() {
           } catch {
             //network error. fall through to landing
           }
-          //If the token is rejected or the request fails clear the stale state
+          //f tIhe token is rejected or the request fails clear the stale state
           localStorage.removeItem('pager_attendee_token')
           localStorage.removeItem(`pager_channels_${eventId}`)
         }
@@ -216,6 +217,18 @@ export default function Attendee() {
     })
   }
 
+  function toggleChannelOpen(channelId) {
+    setClosedChannels(prev => {
+      const next = new Set(prev)
+      if (next.has(channelId)) {
+        next.delete(channelId)
+      } else {
+        next.add(channelId)
+      }
+      return next
+    })
+  }
+
   async function handleSubscribeAll() {
     setSubState('loading')
     setSubError('')
@@ -297,34 +310,66 @@ export default function Attendee() {
   // ── View 2: Confirmation ──────────────────────────────────────────────────
 
   if (view === 'subscribed') {
+    const messagesByChannel = channels
+      .filter(ch => selectedIds.has(ch.id))
+      .map(ch => ({ channel: ch, msgs: messages.filter(m => m.channel_id === ch.id) }))
+
     return (
       <div className="min-h-dvh bg-[#0f0f0f] text-[#f0f0f0] flex flex-col items-center px-5 pt-16 pb-12 font-sans">
         {/* Confirmation header */}
         <div className="flex flex-col items-center text-center gap-3 mb-8">
-          <div className="text-5xl">🔔</div>
-          <h2 className="text-2xl font-bold">You're all set</h2>
+          <h2 className="text-2xl font-bold">{event.name}</h2>
           <p className="text-[#aaa] text-base max-w-xs leading-relaxed">
             You'll receive updates directly on your lock screen. No need to keep this page open.
           </p>
           <p className="text-xs text-[#555]">{status}</p>
         </div>
 
-        {/* Message feed */}
-        {messages.length > 0 && (
-          <div className="w-full max-w-md">
-            <p className="text-xs text-[#555] font-medium uppercase tracking-widest mb-1">Messages</p>
-            <div className="flex flex-col divide-y divide-[#1e1e1e]">
-              {messages.map((msg, i) => (
-                <div key={i} className="py-3">
-                  <p className="text-[0.95rem] leading-relaxed text-[#e0e0e0]">{msg.text}</p>
-                  {msg.time && (
-                    <time className="block text-xs text-[#555] mt-1">
-                      {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </time>
-                  )}
+        {/* Message feed, grouped by channel */}
+        {messagesByChannel.length > 0 && (
+          <div className="w-full max-w-md flex flex-col gap-3">
+            <p className="text-xs text-[#555] font-medium uppercase tracking-widest mb-1">Channels</p>
+            {messagesByChannel.map(({ channel, msgs }) => {
+              const isOpen = !closedChannels.has(channel.id)
+              return (
+                <div key={channel.id} className="border border-[#222] rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => toggleChannelOpen(channel.id)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[#141414] text-left cursor-pointer"
+                  >
+                    <span className="font-medium text-sm text-[#e0e0e0]">{channel.name}</span>
+                    <svg
+                      className={`w-4 h-4 shrink-0 text-[#888] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                      viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 4.5l3.5 3 3.5-3" />
+                    </svg>
+                  </button>
+                  <div
+                    className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="flex flex-col divide-y divide-[#1e1e1e] px-4">
+                        {msgs.length === 0 ? (
+                          <p className="py-3 text-xs text-[#555]">No messages yet.</p>
+                        ) : (
+                          msgs.map((msg, i) => (
+                            <div key={i} className="py-3">
+                              <p className="text-[0.95rem] leading-relaxed text-[#e0e0e0]">{msg.text}</p>
+                              {msg.time && (
+                                <time className="block text-xs text-[#555] mt-1">
+                                  {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </time>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              )
+            })}
           </div>
         )}
 
