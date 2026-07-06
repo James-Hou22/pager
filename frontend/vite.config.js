@@ -40,6 +40,10 @@ export default defineConfig({
     },
   },
   server: {
+    // Node 17+ can resolve "localhost" to ::1 while curl/browsers try
+    // 127.0.0.1 first, causing ECONNREFUSED even though Vite is running.
+    // Binding explicitly to 127.0.0.1 avoids the mismatch.
+    host: '127.0.0.1',
     proxy: {
       '/channel': 'http://localhost:8080',
       '/attendee/events': 'http://localhost:8080',

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -44,8 +45,15 @@ func New(rdb *redis.Client, db *pgxpool.Pool) *Store {
 // otherwise addr is treated as a bare host:port and REDIS_PASSWORD (if set)
 // is used to authenticate.
 func NewRedisClient(addr string) *redis.Client {
-	if opts, err := redis.ParseURL(addr); err == nil {
-		return redis.NewClient(opts)
+	// A bare "host:port" like "redis:6379" is itself valid input to
+	// url.Parse (scheme "redis", opaque "6379"), so checking err == nil
+	// alone isn't enough to detect a real connection URL — it would silently
+	// resolve to go-redis's empty-host default of "localhost:6379" instead
+	// of the intended host.
+	if strings.Contains(addr, "://") {
+		if opts, err := redis.ParseURL(addr); err == nil {
+			return redis.NewClient(opts)
+		}
 	}
 	return redis.NewClient(&redis.Options{
 		Addr:     addr,
